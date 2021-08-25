@@ -1,4 +1,4 @@
-module github.com/divilla/eop09
+module github.com/divilla/eop09/client
 
 go 1.16
 

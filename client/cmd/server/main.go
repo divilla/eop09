@@ -1,11 +1,11 @@
 package main
 
 import (
-	"github.com/divilla/eop09/config"
-	importer "github.com/divilla/eop09/internal/import"
-	"github.com/divilla/eop09/internal/probe"
-	"github.com/divilla/eop09/pkg/cmiddleware"
-	"github.com/divilla/eop09/pkg/pgpool"
+	"github.com/divilla/eop09/client/config"
+	importer "github.com/divilla/eop09/client/internal/import"
+	"github.com/divilla/eop09/client/internal/probe"
+	"github.com/divilla/eop09/client/pkg/cmiddleware"
+	"github.com/divilla/eop09/client/pkg/pgpool"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"

@@ -1,10 +1,10 @@
 package importer
 
 import (
-	"github.com/divilla/eop09/config"
-	"github.com/divilla/eop09/internal/domain"
-	interfaces2 "github.com/divilla/eop09/internal/interfaces"
-	jsonfilereader "github.com/divilla/eop09/pkg/jReader"
+	"github.com/divilla/eop09/client/config"
+	"github.com/divilla/eop09/client/internal/domain"
+	interfaces2 "github.com/divilla/eop09/client/internal/interfaces"
+	jsonfilereader "github.com/divilla/eop09/client/pkg/jReader"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"sync"
