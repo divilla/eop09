@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/divilla/eop09/interfaces"
 	"github.com/divilla/eop09/internal/domain"
+	interfaces2 "github.com/divilla/eop09/internal/interfaces"
 	"github.com/labstack/echo/v4"
 	"io"
 	"net/http"
@@ -13,7 +13,7 @@ import (
 )
 
 type controller struct {
-	logger interfaces.Logger
+	logger interfaces2.Logger
 }
 
 func Controller(e *echo.Echo) {

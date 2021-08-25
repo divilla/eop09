@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/divilla/eop09/interfaces"
 	"github.com/divilla/eop09/internal/domain"
+	interfaces2 "github.com/divilla/eop09/internal/interfaces"
 	"io"
 	"os"
 	"sync"
@@ -16,13 +16,13 @@ type (
 		fileName string
 		file     *os.File
 		decoder  *json.Decoder
-		logger   interfaces.Logger
+		logger   interfaces2.Logger
 	}
 
 	Callback func(wg *sync.WaitGroup, parser interface{}, err error)
 )
 
-func Init(fileName string, logger interfaces.Logger) *JsonFileReader {
+func Init(fileName string, logger interfaces2.Logger) *JsonFileReader {
 	file, err := os.Open(fileName)
 	if err != nil {
 		logger.Fatalf("file '%s' not found: %s", fileName, err.Error())

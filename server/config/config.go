@@ -16,7 +16,7 @@ type values struct {
 func init() {
 	viper.SetConfigName("config.yaml")
 	viper.SetConfigType("yaml")
-	viper.AddConfigPath("config")
+	viper.AddConfigPath("server/config")
 
 	if err := viper.ReadInConfig(); err != nil {
 		panic(fmt.Errorf("Fatal error config file: %w \n", err))
