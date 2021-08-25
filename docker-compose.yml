@@ -1,0 +1,12 @@
+version: '3.1'
+services:
+  mongo:
+    image: "mongo:4.4.8"
+    volumes: 
+      - "~/mongo/eop90/db:/data/db"
+      - "~/mongo/eop90/config:/data/config"
+    command: --serviceExecutor adaptive --wiredTigerCacheSizeGB 1
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: Masa1818

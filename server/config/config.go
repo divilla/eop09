@@ -1,0 +1,30 @@
+package config
+
+import (
+	"fmt"
+	"github.com/spf13/viper"
+	"os"
+)
+
+var App values
+
+type values struct {
+	ServerAddress string
+	MongoDSN      string
+}
+
+func init() {
+	viper.SetConfigName("config.yaml")
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("config")
+
+	if err := viper.ReadInConfig(); err != nil {
+		panic(fmt.Errorf("Fatal error config file: %w \n", err))
+	}
+
+	if err := viper.Unmarshal(&App); err != nil {
+		panic(err)
+	}
+
+	App.MongoDSN = os.Getenv("DSN")
+}

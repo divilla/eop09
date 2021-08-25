@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+option go_package = "github.com/divilla/eop09/crudproto";
+
+package crudproto;
+
+service RPC {
+  rpc Import (stream Entity) returns (Response) {}
+  rpc List (ListRequest) returns (Response) {}
+  rpc Get (PkRequest) returns (Response) {}
+  rpc Upsert (Entity) returns (Response) {}
+  rpc Delete (PkRequest) returns (Response) {}
+}
+
+message ListRequest {
+  uint64 pageNumber = 1;
+  uint64 pageSize = 2;
+}
+
+message PkRequest {
+  bytes id = 1;
+}
+
+message Entity {
+  bytes result = 1;
+}
+
+message Response {
+  bool success = 1;
+  uint64 affectedRows = 2;
+  bytes result = 3;
+  string error = 4;
+}
