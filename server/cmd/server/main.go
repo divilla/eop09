@@ -11,10 +11,12 @@ import (
 	"github.com/labstack/gommon/log"
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/net/context"
-	"net/http"
+	"google.golang.org/grpc"
+	"net"
 	"os"
 	"os/signal"
 	"time"
+	pb "github.com/divilla/eop09/crudproto"
 )
 
 func init() {
@@ -54,9 +56,19 @@ func main() {
 	probe.Controller(e)
 
 	go func() {
-		if err := e.Start(config.App.ServerAddress); err != nil && err != http.ErrServerClosed {
-			e.Logger.Fatal("shutting down the server")
+		lis, err := net.Listen("tcp", config.App.ServerAddress)
+		if err != nil {
+			log.Fatalf("failed to listen: %v", err)
 		}
+		s := grpc.NewServer()
+		pb.RegisterGreeterServer(s, &server{})
+		log.Printf("server listening at %v", lis.Addr())
+		if err := s.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+		//if err := e.Start(config.App.ServerAddress); err != nil && err != http.ErrServerClosed {
+		//	e.Logger.Fatal("shutting down the server")
+		//}
 	}()
 
 	//lis, err := net.Listen("tcp", serverPort)
