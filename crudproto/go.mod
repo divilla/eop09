@@ -1,4 +1,4 @@
-module github.com/divilla/eop09/crudproto
+module github.com/divilla/eop09/crudproto/v0.0.1
 
 go 1.16
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/divilla/eop09/crudproto"
 	"github.com/divilla/eop09/server/config"
 	"github.com/divilla/eop09/server/internal/probe"
 	"github.com/divilla/eop09/server/pkg/cmiddleware"
@@ -16,7 +17,6 @@ import (
 	"os"
 	"os/signal"
 	"time"
-	pb "github.com/divilla/eop09/crudproto"
 )
 
 func init() {
@@ -61,7 +61,7 @@ func main() {
 			log.Fatalf("failed to listen: %v", err)
 		}
 		s := grpc.NewServer()
-		pb.RegisterGreeterServer(s, &server{})
+		crudproto(s, &server{})
 		log.Printf("server listening at %v", lis.Addr())
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
