@@ -20,7 +20,6 @@ func Init(dsn string, logger interfaces2.Logger) *CMongo {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	logger.Info(dsn)
 	client, err := mongo.Connect(ctx, options.Client().
 		ApplyURI(dsn).
 		SetMinPoolSize(10).

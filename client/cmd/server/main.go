@@ -2,10 +2,10 @@ package main
 
 import (
 	"github.com/divilla/eop09/client/config"
+	"github.com/divilla/eop09/client/internal/grpcc"
 	importer "github.com/divilla/eop09/client/internal/import"
 	"github.com/divilla/eop09/client/internal/probe"
 	"github.com/divilla/eop09/client/pkg/cmiddleware"
-	"github.com/divilla/eop09/client/pkg/pgpool"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -34,9 +34,6 @@ func main() {
 		LogLevel:  log.ERROR,
 	}))
 
-	pool := pgpool.Init(os.Getenv("DSN"), e.Logger)
-	defer pool.Close()
-
 	e.Use(cmiddleware.NewContext())
 	e.HTTPErrorHandler = cmiddleware.HTTPErrorHandler
 	//e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
@@ -45,7 +42,12 @@ func main() {
 	//	Timeout:      3*time.Second,
 	//}))
 
-	importer.Controller(e)
+	client, err := grpcc.NewClient(config.App.GRPCServerAddress, e.Logger)
+	if err != nil {
+		panic(err)
+	}
+
+	importer.Controller(e, client)
 	probe.Controller(e)
 
 	go func() {

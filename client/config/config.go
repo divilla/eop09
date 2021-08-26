@@ -8,8 +8,9 @@ import (
 var App values
 
 type values struct {
-	ServerAddress string
-	JsonDataFile  string
+	ServerAddress     string
+	JsonDataFile      string
+	GRPCServerAddress string
 }
 
 func init() {
