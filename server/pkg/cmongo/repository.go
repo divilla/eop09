@@ -38,7 +38,10 @@ func (r *repository) List(ctx context.Context, pageNumber, pageSize int64, resul
 
 	skip := (pageNumber - 1) * pageSize
 
-	cur, err := r.collection.Find(dbc, bson.D{}, options.Find().SetSkip(skip).SetLimit(pageSize))
+	cur, err := r.collection.Find(dbc, bson.D{}, options.Find().
+		SetSort(bson.D{{"_id", 1}}).
+		SetSkip(skip).
+		SetLimit(pageSize))
 	if err != nil {
 		return err
 	}

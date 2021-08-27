@@ -3,7 +3,7 @@ module github.com/divilla/eop09/server
 go 1.16
 
 require (
-	github.com/divilla/eop09/crudproto v0.0.0-20210825102048-480436f005d2
+	github.com/divilla/eop09/crudproto v0.0.0-00010101000000-000000000000
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/joho/godotenv v1.3.0
@@ -22,3 +22,5 @@ require (
 	google.golang.org/genproto v0.0.0-20210824181836-a4879c3d0e89 // indirect
 	google.golang.org/grpc v1.40.0
 )
+
+replace github.com/divilla/eop09/crudproto => ./../crudproto

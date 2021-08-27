@@ -25,7 +25,11 @@ func NewClient(serverAddress string, logger interfaces.Logger) (*Client, error) 
 	return c, err
 }
 
-func (c *Client) ImportClient(ctx context.Context) (crudproto.RPC_ImportClient, error) {
+func (c *Client) List(ctx context.Context, listRequest *crudproto.ListRequest) (*crudproto.ListResponse, error) {
+	return c.client.List(ctx, listRequest)
+}
+
+func (c *Client) Import(ctx context.Context) (crudproto.RPC_ImportClient, error) {
 	return c.client.Import(ctx)
 }
 

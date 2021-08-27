@@ -19,10 +19,10 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RPCClient interface {
 	Import(ctx context.Context, opts ...grpc.CallOption) (RPC_ImportClient, error)
-	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*Response, error)
-	Get(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*Response, error)
-	Upsert(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*Response, error)
-	Delete(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*Response, error)
+	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
+	Get(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*Entity, error)
+	Upsert(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*CommandResponse, error)
+	Delete(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*CommandResponse, error)
 }
 
 type rPCClient struct {
@@ -44,7 +44,7 @@ func (c *rPCClient) Import(ctx context.Context, opts ...grpc.CallOption) (RPC_Im
 
 type RPC_ImportClient interface {
 	Send(*Entity) error
-	CloseAndRecv() (*Response, error)
+	CloseAndRecv() (*CommandResponse, error)
 	grpc.ClientStream
 }
 
@@ -56,19 +56,19 @@ func (x *rPCImportClient) Send(m *Entity) error {
 	return x.ClientStream.SendMsg(m)
 }
 
-func (x *rPCImportClient) CloseAndRecv() (*Response, error) {
+func (x *rPCImportClient) CloseAndRecv() (*CommandResponse, error) {
 	if err := x.ClientStream.CloseSend(); err != nil {
 		return nil, err
 	}
-	m := new(Response)
+	m := new(CommandResponse)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
 }
 
-func (c *rPCClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *rPCClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
+	out := new(ListResponse)
 	err := c.cc.Invoke(ctx, "/crudproto.RPC/List", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -76,8 +76,8 @@ func (c *rPCClient) List(ctx context.Context, in *ListRequest, opts ...grpc.Call
 	return out, nil
 }
 
-func (c *rPCClient) Get(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *rPCClient) Get(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*Entity, error) {
+	out := new(Entity)
 	err := c.cc.Invoke(ctx, "/crudproto.RPC/Get", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -85,8 +85,8 @@ func (c *rPCClient) Get(ctx context.Context, in *PkRequest, opts ...grpc.CallOpt
 	return out, nil
 }
 
-func (c *rPCClient) Upsert(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *rPCClient) Upsert(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*CommandResponse, error) {
+	out := new(CommandResponse)
 	err := c.cc.Invoke(ctx, "/crudproto.RPC/Upsert", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -94,8 +94,8 @@ func (c *rPCClient) Upsert(ctx context.Context, in *Entity, opts ...grpc.CallOpt
 	return out, nil
 }
 
-func (c *rPCClient) Delete(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*Response, error) {
-	out := new(Response)
+func (c *rPCClient) Delete(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*CommandResponse, error) {
+	out := new(CommandResponse)
 	err := c.cc.Invoke(ctx, "/crudproto.RPC/Delete", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -108,10 +108,10 @@ func (c *rPCClient) Delete(ctx context.Context, in *PkRequest, opts ...grpc.Call
 // for forward compatibility
 type RPCServer interface {
 	Import(RPC_ImportServer) error
-	List(context.Context, *ListRequest) (*Response, error)
-	Get(context.Context, *PkRequest) (*Response, error)
-	Upsert(context.Context, *Entity) (*Response, error)
-	Delete(context.Context, *PkRequest) (*Response, error)
+	List(context.Context, *ListRequest) (*ListResponse, error)
+	Get(context.Context, *PkRequest) (*Entity, error)
+	Upsert(context.Context, *Entity) (*CommandResponse, error)
+	Delete(context.Context, *PkRequest) (*CommandResponse, error)
 	mustEmbedUnimplementedRPCServer()
 }
 
@@ -122,16 +122,16 @@ type UnimplementedRPCServer struct {
 func (UnimplementedRPCServer) Import(RPC_ImportServer) error {
 	return status.Errorf(codes.Unimplemented, "method Import not implemented")
 }
-func (UnimplementedRPCServer) List(context.Context, *ListRequest) (*Response, error) {
+func (UnimplementedRPCServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
-func (UnimplementedRPCServer) Get(context.Context, *PkRequest) (*Response, error) {
+func (UnimplementedRPCServer) Get(context.Context, *PkRequest) (*Entity, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedRPCServer) Upsert(context.Context, *Entity) (*Response, error) {
+func (UnimplementedRPCServer) Upsert(context.Context, *Entity) (*CommandResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Upsert not implemented")
 }
-func (UnimplementedRPCServer) Delete(context.Context, *PkRequest) (*Response, error) {
+func (UnimplementedRPCServer) Delete(context.Context, *PkRequest) (*CommandResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedRPCServer) mustEmbedUnimplementedRPCServer() {}
@@ -152,7 +152,7 @@ func _RPC_Import_Handler(srv interface{}, stream grpc.ServerStream) error {
 }
 
 type RPC_ImportServer interface {
-	SendAndClose(*Response) error
+	SendAndClose(*CommandResponse) error
 	Recv() (*Entity, error)
 	grpc.ServerStream
 }
@@ -161,7 +161,7 @@ type rPCImportServer struct {
 	grpc.ServerStream
 }
 
-func (x *rPCImportServer) SendAndClose(m *Response) error {
+func (x *rPCImportServer) SendAndClose(m *CommandResponse) error {
 	return x.ServerStream.SendMsg(m)
 }
 

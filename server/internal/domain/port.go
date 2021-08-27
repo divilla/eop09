@@ -1,39 +1,21 @@
 package domain
 
 import (
-	"encoding/json"
-	"github.com/shopspring/decimal"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type (
-	Ider interface {
-		SetId(id string)
-	}
-
 	Port struct {
-		Id          string            `json:"id"`
-		Name        string            `json:"name"`
-		City        string            `json:"city"`
-		Country     string            `json:"country"`
-		Alias       []string          `json:"alias"`
-		Regions     []string          `json:"regions"`
-		Coordinates []decimal.Decimal `json:"coordinates"`
-		Province    string            `json:"province"`
-		Timezone    string            `json:"timezone"`
-		Unlocs      []string          `json:"unlocs"`
-		Code        string            `json:"code"`
+		Id          string                 `json:"-" bson:"_id"`
+		Name        string                 `json:"name" bson:"name"`
+		City        string                 `json:"city" bson:"city"`
+		Country     string                 `json:"country" bson:"country"`
+		Alias       []string               `json:"alias" bson:"alias"`
+		Regions     []string               `json:"regions" bson:"regions"`
+		Coordinates []primitive.Decimal128 `json:"coordinates" bson:"coordinates"`
+		Province    string                 `json:"province" bson:"province"`
+		Timezone    string                 `json:"timezone" bson:"timezone"`
+		Unlocs      []string               `json:"unlocs" bson:"unlocs"`
+		Code        string                 `json:"code" bson:"code"`
 	}
 )
-
-func (e *Port) SetId(id string) {
-	e.Id = id
-}
-
-func (e *Port) Marshall() ([]byte, error) {
-	return json.Marshal(e)
-}
-
-func (e *Port) Unmarshal(b []byte) error {
-	return json.Unmarshal(b, e)
-}
-
