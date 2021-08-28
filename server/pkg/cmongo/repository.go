@@ -5,18 +5,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/context"
+	"net/http"
 )
-
-type Repository interface {
-	List(ctx context.Context, pageNumber, pageSize int64, results interface{}) error
-	FindOne(ctx context.Context, id interface{}, v interface{}) error
-	CreateOne(ctx context.Context, document interface{}) error
-	CreateMany(ctx context.Context, documents []interface{}) error
-	UpsertOne(ctx context.Context, id interface{}, document interface{}) error
-	UpdateOne(ctx context.Context, id interface{}, document interface{}) error
-	DeleteOne(ctx context.Context, id interface{}) error
-	DropCollection(ctx context.Context) error
-}
 
 type (
 	repository struct {
@@ -54,7 +44,11 @@ func (r *repository) FindOne(ctx context.Context, id interface{}, v interface{})
 	defer cancel()
 
 	res := r.collection.FindOne(dbc, bson.M{"_id": id})
-	if res.Err() != nil {
+	err := res.Err()
+	if err != nil {
+		if err.Error() == "mongo: no documents in result" {
+			return NewJsonError(http.StatusNotFound, "document with requested key not found")
+		}
 		return res.Err()
 	}
 
@@ -93,6 +87,14 @@ func (r *repository) UpdateOne(ctx context.Context, id interface{}, document int
 	return err
 }
 
+func (r *repository) ReplaceOne(ctx context.Context, id interface{}, document interface{}) error {
+	dbc, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	_, err := r.collection.ReplaceOne(dbc, bson.M{"_id": id}, document)
+	return err
+}
+
 func (r *repository) DeleteOne(ctx context.Context, id interface{}) error {
 	dbc, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -101,6 +103,10 @@ func (r *repository) DeleteOne(ctx context.Context, id interface{}) error {
 	return err
 }
 
+func (r *repository) CountAll(ctx context.Context) (int64, error) {
+	return r.collection.CountDocuments(ctx, bson.D{})
+}
+
 func (r *repository) DropCollection(ctx context.Context) error {
-	return r.DropCollection(ctx)
+	return r.collection.Drop(ctx)
 }

@@ -5,11 +5,13 @@ option go_package = "github.com/divilla/eop09/crudproto";
 package crudproto;
 
 service RPC {
-  rpc Import (stream Entity) returns (CommandResponse) {}
-  rpc List (ListRequest) returns (ListResponse) {}
+  rpc Index (IndexRequest) returns (IndexResponse) {}
   rpc Get (PkRequest) returns (Entity) {}
-  rpc Upsert (Entity) returns (CommandResponse) {}
+  rpc Create (Entity) returns (CommandResponse) {}
+  rpc Patch (PkEntity) returns (CommandResponse) {}
+  rpc Put (PkEntity) returns (CommandResponse) {}
   rpc Delete (PkRequest) returns (CommandResponse) {}
+  rpc Import (stream Entity) returns (ImportResponse) {}
 }
 
 message Entity {
@@ -17,8 +19,14 @@ message Entity {
   bytes value = 2;
 }
 
-message ListRequest {
-  int64 pageNumber = 1;
+message PkEntity {
+  string oldKey = 1;
+  string key = 2;
+  bytes value = 3;
+}
+
+message IndexRequest {
+  int64 page = 1;
   int64 pageSize = 2;
 }
 
@@ -26,12 +34,19 @@ message PkRequest {
   string key = 1;
 }
 
-message CommandResponse {
-  bool success = 1;
-  uint64 rowsAffected = 2;
-  repeated string errors = 3;
+message IndexResponse {
+  int64 page = 1;
+  int64 pageSize = 2;
+  repeated Entity results = 3;
+  int64 totalResults = 4;
+  int64 totalPages = 5;
 }
 
-message ListResponse {
-  repeated Entity results = 2;
+message CommandResponse {
+  int64 rowsAffected = 1;
+}
+
+message ImportResponse {
+  int64 rowsAffected = 1;
+  bytes errors = 2;
 }

@@ -19,12 +19,15 @@ func Controller(e *echo.Echo, client i.GRPCClient, reader i.JsonReader) {
 	}
 
 	g := e.Group("/ports")
-	g.GET("", H(ctrl.list))
+	g.GET("", H(ctrl.index))
+	g.GET("/:key", H(ctrl.get))
+	g.POST("", H(ctrl.create))
+	g.PATCH("/:key", H(ctrl.patch))
 	g.GET("/import", H(ctrl.importer))
 }
 
-func (c *controller) list(ctx i.Context) error {
-	res, err := c.service.list(ctx.RequestContext(),
+func (c *controller) index(ctx i.Context) error {
+	res, err := c.service.index(ctx.RequestContext(),
 		ctx.QueryParamInt64("page", 1),
 		ctx.QueryParamInt64("results", 30))
 	if err != nil {
@@ -32,6 +35,43 @@ func (c *controller) list(ctx i.Context) error {
 	}
 
 	return ctx.JSONBytes(http.StatusOK, res)
+}
+
+func (c *controller) get(ctx i.Context) error {
+	res, err := c.service.get(ctx.RequestContext(), ctx.Param("key"))
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSONBytes(http.StatusOK, res)
+}
+
+func (c *controller) create(ctx i.Context) error {
+	req, err := ctx.BodyJson()
+	if err != nil {
+		return err
+	}
+
+	res, err := c.service.create(ctx.RequestContext(), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
+func (c *controller) patch(ctx i.Context) error {
+	req, err := ctx.BodyJson()
+	if err != nil {
+		return err
+	}
+
+	res, err := c.service.patch(ctx.RequestContext(), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, res)
 }
 
 func (c *controller) importer(ctx i.Context) error {

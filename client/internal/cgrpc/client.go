@@ -26,6 +26,15 @@ func NewClient(serverAddress string, logger i.Logger) *Client {
 	return c
 }
 
+func (c *Client) IsConnected() bool {
+	if c.conn == nil {
+		return false
+	}
+
+	state := c.conn.GetState()
+	return state == connectivity.Ready || state == connectivity.Idle
+}
+
 func (c *Client) Close() {
 	if c.conn == nil || c.conn.GetState() == connectivity.Shutdown {
 		return

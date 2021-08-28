@@ -15,6 +15,10 @@ func Unquote(json []byte, paths ...string) ([]byte, error) {
 
 	for _, path := range paths {
 		result := gjson.GetBytes(json, path)
+		if !result.Exists() {
+			continue
+		}
+
 		switch result.Type {
 		case gjson.String:
 			json, err = unquoteValue(json, path, result)

@@ -18,11 +18,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RPCClient interface {
-	Import(ctx context.Context, opts ...grpc.CallOption) (RPC_ImportClient, error)
-	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
+	Index(ctx context.Context, in *IndexRequest, opts ...grpc.CallOption) (*IndexResponse, error)
 	Get(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*Entity, error)
-	Upsert(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*CommandResponse, error)
+	Create(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*CommandResponse, error)
+	Patch(ctx context.Context, in *PkEntity, opts ...grpc.CallOption) (*CommandResponse, error)
+	Put(ctx context.Context, in *PkEntity, opts ...grpc.CallOption) (*CommandResponse, error)
 	Delete(ctx context.Context, in *PkRequest, opts ...grpc.CallOption) (*CommandResponse, error)
+	Import(ctx context.Context, opts ...grpc.CallOption) (RPC_ImportClient, error)
 }
 
 type rPCClient struct {
@@ -33,43 +35,9 @@ func NewRPCClient(cc grpc.ClientConnInterface) RPCClient {
 	return &rPCClient{cc}
 }
 
-func (c *rPCClient) Import(ctx context.Context, opts ...grpc.CallOption) (RPC_ImportClient, error) {
-	stream, err := c.cc.NewStream(ctx, &RPC_ServiceDesc.Streams[0], "/crudproto.RPC/Import", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &rPCImportClient{stream}
-	return x, nil
-}
-
-type RPC_ImportClient interface {
-	Send(*Entity) error
-	CloseAndRecv() (*CommandResponse, error)
-	grpc.ClientStream
-}
-
-type rPCImportClient struct {
-	grpc.ClientStream
-}
-
-func (x *rPCImportClient) Send(m *Entity) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *rPCImportClient) CloseAndRecv() (*CommandResponse, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(CommandResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func (c *rPCClient) List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error) {
-	out := new(ListResponse)
-	err := c.cc.Invoke(ctx, "/crudproto.RPC/List", in, out, opts...)
+func (c *rPCClient) Index(ctx context.Context, in *IndexRequest, opts ...grpc.CallOption) (*IndexResponse, error) {
+	out := new(IndexResponse)
+	err := c.cc.Invoke(ctx, "/crudproto.RPC/Index", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +53,27 @@ func (c *rPCClient) Get(ctx context.Context, in *PkRequest, opts ...grpc.CallOpt
 	return out, nil
 }
 
-func (c *rPCClient) Upsert(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*CommandResponse, error) {
+func (c *rPCClient) Create(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*CommandResponse, error) {
 	out := new(CommandResponse)
-	err := c.cc.Invoke(ctx, "/crudproto.RPC/Upsert", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/crudproto.RPC/Create", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rPCClient) Patch(ctx context.Context, in *PkEntity, opts ...grpc.CallOption) (*CommandResponse, error) {
+	out := new(CommandResponse)
+	err := c.cc.Invoke(ctx, "/crudproto.RPC/Patch", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *rPCClient) Put(ctx context.Context, in *PkEntity, opts ...grpc.CallOption) (*CommandResponse, error) {
+	out := new(CommandResponse)
+	err := c.cc.Invoke(ctx, "/crudproto.RPC/Put", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -103,15 +89,51 @@ func (c *rPCClient) Delete(ctx context.Context, in *PkRequest, opts ...grpc.Call
 	return out, nil
 }
 
+func (c *rPCClient) Import(ctx context.Context, opts ...grpc.CallOption) (RPC_ImportClient, error) {
+	stream, err := c.cc.NewStream(ctx, &RPC_ServiceDesc.Streams[0], "/crudproto.RPC/Import", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &rPCImportClient{stream}
+	return x, nil
+}
+
+type RPC_ImportClient interface {
+	Send(*Entity) error
+	CloseAndRecv() (*ImportResponse, error)
+	grpc.ClientStream
+}
+
+type rPCImportClient struct {
+	grpc.ClientStream
+}
+
+func (x *rPCImportClient) Send(m *Entity) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *rPCImportClient) CloseAndRecv() (*ImportResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(ImportResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // RPCServer is the server API for RPC service.
 // All implementations must embed UnimplementedRPCServer
 // for forward compatibility
 type RPCServer interface {
-	Import(RPC_ImportServer) error
-	List(context.Context, *ListRequest) (*ListResponse, error)
+	Index(context.Context, *IndexRequest) (*IndexResponse, error)
 	Get(context.Context, *PkRequest) (*Entity, error)
-	Upsert(context.Context, *Entity) (*CommandResponse, error)
+	Create(context.Context, *Entity) (*CommandResponse, error)
+	Patch(context.Context, *PkEntity) (*CommandResponse, error)
+	Put(context.Context, *PkEntity) (*CommandResponse, error)
 	Delete(context.Context, *PkRequest) (*CommandResponse, error)
+	Import(RPC_ImportServer) error
 	mustEmbedUnimplementedRPCServer()
 }
 
@@ -119,20 +141,26 @@ type RPCServer interface {
 type UnimplementedRPCServer struct {
 }
 
-func (UnimplementedRPCServer) Import(RPC_ImportServer) error {
-	return status.Errorf(codes.Unimplemented, "method Import not implemented")
-}
-func (UnimplementedRPCServer) List(context.Context, *ListRequest) (*ListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+func (UnimplementedRPCServer) Index(context.Context, *IndexRequest) (*IndexResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Index not implemented")
 }
 func (UnimplementedRPCServer) Get(context.Context, *PkRequest) (*Entity, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
 }
-func (UnimplementedRPCServer) Upsert(context.Context, *Entity) (*CommandResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Upsert not implemented")
+func (UnimplementedRPCServer) Create(context.Context, *Entity) (*CommandResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (UnimplementedRPCServer) Patch(context.Context, *PkEntity) (*CommandResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Patch not implemented")
+}
+func (UnimplementedRPCServer) Put(context.Context, *PkEntity) (*CommandResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Put not implemented")
 }
 func (UnimplementedRPCServer) Delete(context.Context, *PkRequest) (*CommandResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedRPCServer) Import(RPC_ImportServer) error {
+	return status.Errorf(codes.Unimplemented, "method Import not implemented")
 }
 func (UnimplementedRPCServer) mustEmbedUnimplementedRPCServer() {}
 
@@ -147,46 +175,20 @@ func RegisterRPCServer(s grpc.ServiceRegistrar, srv RPCServer) {
 	s.RegisterService(&RPC_ServiceDesc, srv)
 }
 
-func _RPC_Import_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(RPCServer).Import(&rPCImportServer{stream})
-}
-
-type RPC_ImportServer interface {
-	SendAndClose(*CommandResponse) error
-	Recv() (*Entity, error)
-	grpc.ServerStream
-}
-
-type rPCImportServer struct {
-	grpc.ServerStream
-}
-
-func (x *rPCImportServer) SendAndClose(m *CommandResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *rPCImportServer) Recv() (*Entity, error) {
-	m := new(Entity)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _RPC_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListRequest)
+func _RPC_Index_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IndexRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RPCServer).List(ctx, in)
+		return srv.(RPCServer).Index(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/crudproto.RPC/List",
+		FullMethod: "/crudproto.RPC/Index",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RPCServer).List(ctx, req.(*ListRequest))
+		return srv.(RPCServer).Index(ctx, req.(*IndexRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -209,20 +211,56 @@ func _RPC_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RPC_Upsert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _RPC_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Entity)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RPCServer).Upsert(ctx, in)
+		return srv.(RPCServer).Create(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/crudproto.RPC/Upsert",
+		FullMethod: "/crudproto.RPC/Create",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RPCServer).Upsert(ctx, req.(*Entity))
+		return srv.(RPCServer).Create(ctx, req.(*Entity))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RPC_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PkEntity)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RPCServer).Patch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crudproto.RPC/Patch",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RPCServer).Patch(ctx, req.(*PkEntity))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RPC_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PkEntity)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RPCServer).Put(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/crudproto.RPC/Put",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RPCServer).Put(ctx, req.(*PkEntity))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -245,6 +283,32 @@ func _RPC_Delete_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RPC_Import_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(RPCServer).Import(&rPCImportServer{stream})
+}
+
+type RPC_ImportServer interface {
+	SendAndClose(*ImportResponse) error
+	Recv() (*Entity, error)
+	grpc.ServerStream
+}
+
+type rPCImportServer struct {
+	grpc.ServerStream
+}
+
+func (x *rPCImportServer) SendAndClose(m *ImportResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *rPCImportServer) Recv() (*Entity, error) {
+	m := new(Entity)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // RPC_ServiceDesc is the grpc.ServiceDesc for RPC service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -253,16 +317,24 @@ var RPC_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*RPCServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "List",
-			Handler:    _RPC_List_Handler,
+			MethodName: "Index",
+			Handler:    _RPC_Index_Handler,
 		},
 		{
 			MethodName: "Get",
 			Handler:    _RPC_Get_Handler,
 		},
 		{
-			MethodName: "Upsert",
-			Handler:    _RPC_Upsert_Handler,
+			MethodName: "Create",
+			Handler:    _RPC_Create_Handler,
+		},
+		{
+			MethodName: "Patch",
+			Handler:    _RPC_Patch_Handler,
+		},
+		{
+			MethodName: "Put",
+			Handler:    _RPC_Put_Handler,
 		},
 		{
 			MethodName: "Delete",

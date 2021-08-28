@@ -16,6 +16,10 @@ func Quote(json []byte, paths ...string) ([]byte, error) {
 
 	for _, path := range paths {
 		result := gjson.GetBytes(json, path)
+		if !result.Exists() {
+			continue
+		}
+
 		switch result.Type {
 		case gjson.Number:
 			json, err = quoteValue(json, path, result)

@@ -56,7 +56,8 @@ func (ctx *ccontext) BodyBytes() []byte {
 func (ctx *ccontext) BodyJson() (gjson.Result, error) {
 	res := gjson.Parse(ctx.Body())
 	if res.Type != gjson.JSON {
-		return res, echo.NewHTTPError(http.StatusBadRequest, "Invalid or malformed json request")
+		return res, echo.NewHTTPError(http.StatusBadRequest,
+			"invalid or malformed json request")
 	}
 
 	return res, nil
