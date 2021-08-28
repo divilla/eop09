@@ -5,7 +5,7 @@ import (
 	"fmt"
 	i "github.com/divilla/eop09/client/internal/interfaces"
 	"github.com/divilla/eop09/client/pkg/jsondecimals"
-	"github.com/divilla/eop09/entityproto"
+	pb "github.com/divilla/eop09/entityproto"
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -28,11 +28,11 @@ func newService(client i.GRPCClient, reader i.JsonReader, logger i.Logger) *serv
 	}
 }
 
-func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *entityproto.IndexResponse, error) {
+func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *pb.IndexResponse, error) {
 	var value json.RawMessage
 	var err error
 
-	res, err := s.client.Index(ctx, &entityproto.IndexRequest{
+	res, err := s.client.Index(ctx, &pb.IndexRequest{
 		Page:     page,
 		PageSize: pageSize,
 	})
@@ -57,7 +57,7 @@ func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *ent
 }
 
 func (s *service) get(ctx context.Context, key string) ([]byte, error) {
-	entity, err := s.client.Get(ctx, &entityproto.KeyRequest{Key: key})
+	entity, err := s.client.Get(ctx, &pb.KeyRequest{Key: key})
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *service) get(ctx context.Context, key string) ([]byte, error) {
 	return sjson.SetRawBytes(res, entity.GetKey(), value)
 }
 
-func (s *service) create(ctx context.Context, result gjson.Result) (*entityproto.CommandResponse, error) {
+func (s *service) create(ctx context.Context, result gjson.Result) (*pb.CommandResponse, error) {
 	var key, value string
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
@@ -84,13 +84,13 @@ func (s *service) create(ctx context.Context, result gjson.Result) (*entityproto
 		return nil, err
 	}
 
-	return s.client.Create(ctx, &entityproto.Entity{
+	return s.client.Create(ctx, &pb.Entity{
 		Key:   key,
 		Value: val,
 	})
 }
 
-func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result) (*entityproto.CommandResponse, error) {
+func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result) (*pb.CommandResponse, error) {
 	var key, value string
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
@@ -103,14 +103,14 @@ func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result)
 		return nil, err
 	}
 
-	return s.client.Patch(ctx, &entityproto.KeyEntity{
+	return s.client.Patch(ctx, &pb.KeyEntity{
 		OldKey: oldKey,
 		Key:    key,
 		Value:  val,
 	})
 }
 
-func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (*entityproto.CommandResponse, error) {
+func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (*pb.CommandResponse, error) {
 	var key, value string
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
@@ -123,20 +123,20 @@ func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (
 		return nil, err
 	}
 
-	return s.client.Put(ctx, &entityproto.KeyEntity{
+	return s.client.Put(ctx, &pb.KeyEntity{
 		OldKey: oldKey,
 		Key:    key,
 		Value:  val,
 	})
 }
 
-func (s *service) delete(ctx context.Context, key string) (*entityproto.CommandResponse, error) {
-	return s.client.Delete(ctx, &entityproto.KeyRequest{
+func (s *service) delete(ctx context.Context, key string) (*pb.CommandResponse, error) {
+	return s.client.Delete(ctx, &pb.KeyRequest{
 		Key: key,
 	})
 }
 
-func (s *service) importer(ctx context.Context) (*entityproto.ImportResponse, error) {
+func (s *service) importer(ctx context.Context) (*pb.ImportResponse, error) {
 	var index uint64
 	var key string
 	var value json.RawMessage
@@ -169,7 +169,7 @@ func (s *service) importer(ctx context.Context) (*entityproto.ImportResponse, er
 			s.logger.Error(err)
 		}
 
-		err = impCli.Send(&entityproto.Entity{
+		err = impCli.Send(&pb.Entity{
 			Key:   key,
 			Value: value,
 		})

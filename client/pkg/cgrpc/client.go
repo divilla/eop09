@@ -2,7 +2,7 @@ package cgrpc
 
 import (
 	i "github.com/divilla/eop09/client/internal/interfaces"
-	"github.com/divilla/eop09/entityproto"
+	pb "github.com/divilla/eop09/entityproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/connectivity"
@@ -10,7 +10,7 @@ import (
 )
 
 type Client struct {
-	entityproto.RPCClient
+	pb.RPCClient
 	serverAddress string
 	conn          *grpc.ClientConn
 	logger        i.Logger
@@ -56,6 +56,6 @@ func (c *Client) dial() {
 		c.logger.Panicf("gRPC client failed to connect: %w", err)
 	} else {
 		c.conn = conn
-		c.RPCClient = entityproto.NewRPCClient(conn)
+		c.RPCClient = pb.NewRPCClient(conn)
 	}
 }

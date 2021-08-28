@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/divilla/eop09/entityproto"
+	pb "github.com/divilla/eop09/entityproto"
 	"github.com/divilla/eop09/server/config"
 	"github.com/divilla/eop09/server/internal/rpc"
 	"github.com/divilla/eop09/server/pkg/cmongo"
@@ -32,7 +32,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	entityproto.RegisterRPCServer(s, rpc.NewServer(rep, logger))
+	pb.RegisterRPCServer(s, rpc.NewServer(rep, logger))
 	logger.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		logger.Fatalf("failed to serve: %v", err)
