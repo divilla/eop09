@@ -10,7 +10,7 @@ import (
 
 type (
 	PortDto struct {
-		Id          string                 `json:"key" bson:"_id"`
+		Key         string                 `json:"-" bson:"key"`
 		Name        string                 `json:"name" bson:"name"`
 		City        string                 `json:"city" bson:"city"`
 		Country     string                 `json:"country" bson:"country"`
@@ -28,7 +28,7 @@ type (
 
 func (p *PortDto) Validate() validation.Errors {
 	err := validation.ValidateStruct(p,
-		validation.Field(&p.Id, validation.Required.Error("required"),
+		validation.Field(&p.Key, validation.Required.Error("required"),
 			validation.Match(regexp.MustCompile("^[A-Z]{5}$")).Error("must be 5 uppercase letters word")),
 		validation.Field(&p.Name, validation.Required.Error("required")),
 		validation.Field(&p.City, validation.Required.Error("required")),
@@ -54,6 +54,9 @@ func (p *PortDto) Validate() validation.Errors {
 			validation.Match(regexp.MustCompile("^\\d{5}$")).Error("must be 5 digits number")),
 	)
 
+	if err == nil {
+		return nil
+	}
 	return err.(validation.Errors)
 }
 

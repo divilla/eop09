@@ -6,7 +6,8 @@ import (
 
 type (
 	Port struct {
-		Id          string                 `json:"-" bson:"_id"`
+		Id          primitive.ObjectID     `json:"-" bson:"_id"`
+		Key         string                 `json:"-" bson:"key"`
 		Name        string                 `json:"name" bson:"name"`
 		City        string                 `json:"city" bson:"city"`
 		Country     string                 `json:"country" bson:"country"`

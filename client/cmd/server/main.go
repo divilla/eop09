@@ -47,7 +47,7 @@ func main() {
 	client := cgrpc.NewClient(config.App.GRPCServerAddress, e.Logger)
 	defer client.Close()
 
-	importer.Controller(e, client, reader)
+	app.Controller(e, client, reader)
 	probe.Controller(e)
 
 	go func() {

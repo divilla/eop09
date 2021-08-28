@@ -3,6 +3,7 @@ package cmongo
 import (
 	"context"
 	interfaces2 "github.com/divilla/eop09/server/internal/interfaces"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -41,6 +42,8 @@ func Init(dsn string, logger interfaces2.Logger) *CMongo {
 
 	db := client.Database("eop09")
 
+	createCollectionAndIndex(ctx, db, "port", "key", 1)
+
 	return &CMongo{
 		client:         client,
 		db:             db,
@@ -57,4 +60,32 @@ func (c *CMongo) Db() *mongo.Database {
 
 func (c *CMongo) Collection(name string, opts ...*options.CollectionOptions) *mongo.Collection {
 	return c.db.Collection(name, opts...)
+}
+
+func createCollectionAndIndex(ctx context.Context, db *mongo.Database, collection string, field string, direction int) {
+	var portExists bool
+	collections, err := db.ListCollectionNames(ctx, bson.D{})
+	if err != nil {
+		panic(err)
+	}
+	for _, v := range collections {
+		if v == collection {
+			portExists = true
+		}
+	}
+
+	if !portExists {
+		err = db.CreateCollection(ctx, collection)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	_, err = db.Collection(collection).Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.M{field: direction},
+		Options: options.Index().SetUnique(true),
+	})
+	if err != nil {
+		panic(err)
+	}
 }

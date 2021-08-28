@@ -1,4 +1,4 @@
-package importer
+package app
 
 import (
 	i "github.com/divilla/eop09/client/internal/interfaces"
@@ -23,7 +23,9 @@ func Controller(e *echo.Echo, client i.GRPCClient, reader i.JsonReader) {
 	g.GET("/:key", H(ctrl.get))
 	g.POST("", H(ctrl.create))
 	g.PATCH("/:key", H(ctrl.patch))
-	g.GET("/import", H(ctrl.importer))
+	g.PUT("/:key", H(ctrl.put))
+	g.DELETE("/:key", H(ctrl.delete))
+	e.GET("/import", H(ctrl.importer))
 }
 
 func (c *controller) index(ctx i.Context) error {
@@ -66,7 +68,30 @@ func (c *controller) patch(ctx i.Context) error {
 		return err
 	}
 
-	res, err := c.service.patch(ctx.RequestContext(), req)
+	res, err := c.service.patch(ctx.RequestContext(), ctx.Param("key"), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
+func (c *controller) put(ctx i.Context) error {
+	req, err := ctx.BodyJson()
+	if err != nil {
+		return err
+	}
+
+	res, err := c.service.put(ctx.RequestContext(), ctx.Param("key"), req)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, res)
+}
+
+func (c *controller) delete(ctx i.Context) error {
+	res, err := c.service.delete(ctx.RequestContext(), ctx.Param("key"))
 	if err != nil {
 		return err
 	}

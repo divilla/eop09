@@ -29,7 +29,7 @@ func (r *repository) List(ctx context.Context, pageNumber, pageSize int64, resul
 	skip := (pageNumber - 1) * pageSize
 
 	cur, err := r.collection.Find(dbc, bson.D{}, options.Find().
-		SetSort(bson.D{{"_id", 1}}).
+		SetSort(bson.D{{"key", 1}}).
 		SetSkip(skip).
 		SetLimit(pageSize))
 	if err != nil {
@@ -39,11 +39,11 @@ func (r *repository) List(ctx context.Context, pageNumber, pageSize int64, resul
 	return cur.All(ctx, results)
 }
 
-func (r *repository) FindOne(ctx context.Context, id interface{}, v interface{}) error {
+func (r *repository) FindOne(ctx context.Context, key interface{}, v interface{}) error {
 	dbc, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	res := r.collection.FindOne(dbc, bson.M{"_id": id})
+	res := r.collection.FindOne(dbc, bson.M{"key": key})
 	err := res.Err()
 	if err != nil {
 		if err.Error() == "mongo: no documents in result" {
@@ -71,35 +71,35 @@ func (r *repository) CreateMany(ctx context.Context, documents []interface{}) er
 	return err
 }
 
-func (r *repository) UpsertOne(ctx context.Context, id interface{}, document interface{}) error {
+func (r *repository) UpsertOne(ctx context.Context, key interface{}, document interface{}) error {
 	dbc, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	_, err := r.collection.ReplaceOne(dbc, bson.M{"_id": id}, document, options.Replace().SetUpsert(true))
+	_, err := r.collection.ReplaceOne(dbc, bson.M{"key": key}, document, options.Replace().SetUpsert(true))
 	return err
 }
 
-func (r *repository) UpdateOne(ctx context.Context, id interface{}, document interface{}) error {
+func (r *repository) UpdateOne(ctx context.Context, key interface{}, document interface{}) error {
 	dbc, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	_, err := r.collection.UpdateByID(dbc, id, document)
+	_, err := r.collection.UpdateOne(dbc, bson.M{"key": key}, document)
 	return err
 }
 
-func (r *repository) ReplaceOne(ctx context.Context, id interface{}, document interface{}) error {
+func (r *repository) ReplaceOne(ctx context.Context, key interface{}, document interface{}) error {
 	dbc, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	_, err := r.collection.ReplaceOne(dbc, bson.M{"_id": id}, document)
+	_, err := r.collection.ReplaceOne(dbc, bson.M{"key": key}, document)
 	return err
 }
 
-func (r *repository) DeleteOne(ctx context.Context, id interface{}) error {
+func (r *repository) DeleteOne(ctx context.Context, key interface{}) error {
 	dbc, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	_, err := r.collection.DeleteOne(dbc, bson.M{"_id": id})
+	_, err := r.collection.DeleteOne(dbc, bson.M{"key": key})
 	return err
 }
 

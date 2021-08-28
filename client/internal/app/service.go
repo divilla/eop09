@@ -1,4 +1,4 @@
-package importer
+package app
 
 import (
 	"encoding/json"
@@ -90,19 +90,53 @@ func (s *service) create(ctx context.Context, result gjson.Result) (*crudproto.C
 	})
 }
 
-func (s *service) patch(ctx context.Context, key string, result gjson.Result) (*crudproto.CommandResponse, error) {
-	val, err := jsondecimals.Quote([]byte(result.Raw), "coordinates")
+func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result) (*crudproto.CommandResponse, error) {
+	var key, value string
+	result.ForEach(func(k, v gjson.Result) bool {
+		key = k.String()
+		value = v.Raw
+		return false
+	})
+
+	val, err := jsondecimals.Quote([]byte(value), "coordinates")
 	if err != nil {
 		return nil, err
 	}
 
-	return s.client.Patch(ctx, &crudproto.Entity{
-		Key:   key,
-		Value: val,
+	return s.client.Patch(ctx, &crudproto.PkEntity{
+		OldKey: oldKey,
+		Key:    key,
+		Value:  val,
 	})
 }
 
-func (s *service) importer(ctx context.Context) (*crudproto.CommandResponse, error) {
+func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (*crudproto.CommandResponse, error) {
+	var key, value string
+	result.ForEach(func(k, v gjson.Result) bool {
+		key = k.String()
+		value = v.Raw
+		return false
+	})
+
+	val, err := jsondecimals.Quote([]byte(value), "coordinates")
+	if err != nil {
+		return nil, err
+	}
+
+	return s.client.Put(ctx, &crudproto.PkEntity{
+		OldKey: oldKey,
+		Key:    key,
+		Value:  val,
+	})
+}
+
+func (s *service) delete(ctx context.Context, key string) (*crudproto.CommandResponse, error) {
+	return s.client.Delete(ctx, &crudproto.PkRequest{
+		Key:    key,
+	})
+}
+
+func (s *service) importer(ctx context.Context) (*crudproto.ImportResponse, error) {
 	var index uint64
 	var key string
 	var value json.RawMessage
@@ -136,7 +170,7 @@ func (s *service) importer(ctx context.Context) (*crudproto.CommandResponse, err
 		}
 
 		err = impCli.Send(&crudproto.Entity{
-			Key: key,
+			Key:   key,
 			Value: value,
 		})
 		if err != nil {

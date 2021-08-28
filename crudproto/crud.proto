@@ -47,6 +47,7 @@ message CommandResponse {
 }
 
 message ImportResponse {
-  int64 rowsAffected = 1;
-  bytes errors = 2;
+  bool success = 1;
+  int64 rowsAffected = 2;
+  string errors = 3;
 }
