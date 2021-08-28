@@ -57,9 +57,9 @@ func quoteArray(json []byte, path string, result gjson.Result) ([]byte, error) {
 
 	result.ForEach(func(key, value gjson.Result) bool {
 		if value.Type == gjson.Number {
-			json, err = sjson.SetBytes(json, path + ".-1", value.Raw)
+			json, err = sjson.SetBytes(json, path+".-1", value.Raw)
 		} else {
-			json, err = sjson.SetRawBytes(json, path + ".-1", []byte(value.Raw))
+			json, err = sjson.SetRawBytes(json, path+".-1", []byte(value.Raw))
 		}
 		if err != nil {
 			return false

@@ -14,4 +14,3 @@ type Repository interface {
 	CountAll(ctx context.Context) (int64, error)
 	DropCollection(ctx context.Context) error
 }
-

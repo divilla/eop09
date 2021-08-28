@@ -12,8 +12,8 @@ import (
 
 type (
 	CMongo struct {
-		client         *mongo.Client
-		db             *mongo.Database
+		client *mongo.Client
+		db     *mongo.Database
 	}
 )
 
@@ -45,8 +45,8 @@ func Init(dsn string, logger interfaces2.Logger) *CMongo {
 	createCollectionAndIndex(ctx, db, "port", "key", 1)
 
 	return &CMongo{
-		client:         client,
-		db:             db,
+		client: client,
+		db:     db,
 	}
 }
 

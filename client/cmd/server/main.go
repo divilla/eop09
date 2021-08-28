@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/divilla/eop09/client/config"
 	"github.com/divilla/eop09/client/internal/app"
-	"github.com/divilla/eop09/client/internal/cgrpc"
 	"github.com/divilla/eop09/client/internal/probe"
 	"github.com/divilla/eop09/client/pkg/cecho"
+	cgrpc2 "github.com/divilla/eop09/client/pkg/cgrpc"
 	"github.com/divilla/eop09/client/pkg/largejsonreader"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -44,7 +44,7 @@ func main() {
 	//}))
 
 	reader := largejsonreader.New(config.App.JsonDataFile)
-	client := cgrpc.NewClient(config.App.GRPCServerAddress, e.Logger)
+	client := cgrpc2.NewClient(config.App.GRPCServerAddress, e.Logger)
 	defer client.Close()
 
 	app.Controller(e, client, reader)

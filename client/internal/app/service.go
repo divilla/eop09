@@ -132,7 +132,7 @@ func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (
 
 func (s *service) delete(ctx context.Context, key string) (*crudproto.CommandResponse, error) {
 	return s.client.Delete(ctx, &crudproto.PkRequest{
-		Key:    key,
+		Key: key,
 	})
 }
 

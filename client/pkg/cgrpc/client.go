@@ -49,7 +49,7 @@ func (c *Client) Close() {
 func (c *Client) dial() {
 	cp := grpc.ConnectParams{
 		Backoff:           backoff.DefaultConfig,
-		MinConnectTimeout: 3*time.Second,
+		MinConnectTimeout: 3 * time.Second,
 	}
 	conn, err := grpc.Dial(c.serverAddress, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithConnectParams(cp))
 	if err != nil {

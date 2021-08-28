@@ -62,10 +62,10 @@ func unquoteArray(json []byte, path string, result gjson.Result) ([]byte, error)
 	result.ForEach(func(key, value gjson.Result) bool {
 		numberRegex := regexp.MustCompile(`^[+\-]?(?:(?:0|[1-9]\d*)(?:\.\d*)?|\.\d+)(?:\d[eE][+\-]?\d+)?$`)
 		if value.Type != gjson.String || !numberRegex.MatchString(value.String()) {
-			json, err = sjson.SetRawBytes(json, path + ".-1", []byte(value.Raw))
+			json, err = sjson.SetRawBytes(json, path+".-1", []byte(value.Raw))
 			return true
 		}
-		json, err = sjson.SetRawBytes(json, path + ".-1", []byte(value.String()))
+		json, err = sjson.SetRawBytes(json, path+".-1", []byte(value.String()))
 		if err != nil {
 			return false
 		}

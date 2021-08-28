@@ -10,13 +10,13 @@ import (
 
 type controller struct {
 	service *service
-	logger i.Logger
+	logger  i.Logger
 }
 
 func Controller(e *echo.Echo, client i.GRPCClient, reader i.JsonReader) {
 	ctrl := &controller{
 		service: newService(client, reader, e.Logger),
-		logger: e.Logger,
+		logger:  e.Logger,
 	}
 
 	g := e.Group("/ports")

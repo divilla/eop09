@@ -17,4 +17,3 @@ func NewJsonError(code int, message string) JsonError {
 func (j JsonError) Error() string {
 	return string(j)
 }
-

@@ -36,4 +36,3 @@ func (e *Port) Marshall() ([]byte, error) {
 func (e *Port) Unmarshal(b []byte) error {
 	return json.Unmarshal(b, e)
 }
-
