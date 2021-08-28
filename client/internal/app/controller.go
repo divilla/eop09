@@ -18,16 +18,15 @@ func Controller(e *echo.Echo, client i.GRPCClient, reader i.JsonReader) {
 		logger: e.Logger,
 	}
 
-	e.GET("/list", H(ctrl.list))
-	e.GET("/list/:pageNumber", H(ctrl.list))
-	e.GET("/list/:pageNumber/:pageSize", H(ctrl.list))
-	e.GET("/import", H(ctrl.importer))
+	g := e.Group("/ports")
+	g.GET("", H(ctrl.list))
+	g.GET("/import", H(ctrl.importer))
 }
 
-func (c *controller) list(ctx Context) error {
+func (c *controller) list(ctx i.Context) error {
 	res, err := c.service.list(ctx.RequestContext(),
-		ctx.ParamInt64("pageNumber", 1),
-		ctx.ParamInt64("pageNumber", 30))
+		ctx.QueryParamInt64("page", 1),
+		ctx.QueryParamInt64("results", 30))
 	if err != nil {
 		return err
 	}
@@ -35,7 +34,7 @@ func (c *controller) list(ctx Context) error {
 	return ctx.JSONBytes(http.StatusOK, res)
 }
 
-func (c *controller) importer(ctx Context) error {
+func (c *controller) importer(ctx i.Context) error {
 	res, err := c.service.importer(ctx.RequestContext())
 	if err != nil {
 		return err

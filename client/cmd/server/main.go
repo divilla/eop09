@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/divilla/eop09/client/config"
 	"github.com/divilla/eop09/client/internal/app"
 	"github.com/divilla/eop09/client/internal/cgrpc"
@@ -44,13 +43,9 @@ func main() {
 	//	Timeout:      3*time.Second,
 	//}))
 
+	reader := largejsonreader.New(config.App.JsonDataFile)
 	client := cgrpc.NewClient(config.App.GRPCServerAddress, e.Logger)
 	defer client.Close()
-
-	reader, err := largejsonreader.New(config.App.JsonDataFile)
-	if err != nil {
-		panic(fmt.Errorf("failed to start largeJsonFile reader: %w", err))
-	}
 
 	importer.Controller(e, client, reader)
 	probe.Controller(e)

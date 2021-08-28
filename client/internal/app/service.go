@@ -26,6 +26,9 @@ func newService(client i.GRPCClient, reader i.JsonReader, logger i.Logger) *serv
 }
 
 func (s *service) list(ctx context.Context, pageNumber, pageSize int64) ([]byte, error) {
+	var value json.RawMessage
+	var err error
+
 	req, err := s.client.List(ctx, &crudproto.ListRequest{
 		PageNumber: pageNumber,
 		PageSize:   pageSize,
@@ -36,7 +39,7 @@ func (s *service) list(ctx context.Context, pageNumber, pageSize int64) ([]byte,
 
 	res := []byte(`{}`)
 	for _, v := range req.GetResults() {
-		value, err := jsondecimals.Unquote(v.GetValue(), "coordinates")
+		value, err = jsondecimals.Unquote(v.GetValue(), "coordinates")
 		if err != nil {
 			s.logger.Error(err)
 		}
@@ -61,14 +64,17 @@ func (s *service) importer(ctx context.Context) (*crudproto.CommandResponse, err
 		return nil, fmt.Errorf("failed to open grpc upstream: %w", err)
 	}
 
-	s.reader.Reset()
+	err = s.reader.Start()
+	if err != nil {
+		return nil, fmt.Errorf("json reader failed to start: %w", err)
+	}
 	for {
 		err = s.reader.Read(&index, &key, &value)
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
-			s.logger.Errorf("json file read error: %w", err)
+			return nil, fmt.Errorf("json file read error: %w", err)
 		}
 
 		value, err = jsondecimals.Quote(value, "coordinates")
@@ -83,6 +89,10 @@ func (s *service) importer(ctx context.Context) (*crudproto.CommandResponse, err
 		if err != nil {
 			s.logger.Errorf("grpc upstream send failed: %w", err)
 		}
+	}
+	err = s.reader.Close()
+	if err != nil {
+		return nil, fmt.Errorf("json reader failed to close: %w", err)
 	}
 
 	res, err := impCli.CloseAndRecv()

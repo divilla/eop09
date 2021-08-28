@@ -11,18 +11,6 @@ import (
 )
 
 type (
-	Context interface {
-		echo.Context
-		RequestContext() context.Context
-		Body() string
-		BodyBytes() []byte
-		BodyJson() (gjson.Result, error)
-		BodyMap() (map[string]interface{}, error)
-		JSONBytes(code int, json []byte) error
-		JSONString(code int, json string) error
-		ParamInt64(name string, defaultValue int64) int64
-	}
-
 	ccontext struct {
 		echo.Context
 		//identity     *entity.Identity
@@ -106,6 +94,15 @@ func (ctx *ccontext) JSONString(code int, json string) error {
 
 func (ctx *ccontext) ParamInt64(name string, defaultValue int64) int64 {
 	value, err := strconv.ParseInt(ctx.Param(name), 10, 64)
+	if err != nil || value < 1 {
+		value = defaultValue
+	}
+
+	return value
+}
+
+func (ctx *ccontext) QueryParamInt64(name string, defaultValue int64) int64 {
+	value, err := strconv.ParseInt(ctx.QueryParam(name), 10, 64)
 	if err != nil || value < 1 {
 		value = defaultValue
 	}
