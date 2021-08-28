@@ -1,4 +1,4 @@
-module github.com/divilla/eop09/crudproto
+module github.com/divilla/eop09/entityproto
 
 go 1.16
 

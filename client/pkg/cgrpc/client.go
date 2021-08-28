@@ -2,7 +2,7 @@ package cgrpc
 
 import (
 	i "github.com/divilla/eop09/client/internal/interfaces"
-	"github.com/divilla/eop09/crudproto"
+	"github.com/divilla/eop09/entityproto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/connectivity"

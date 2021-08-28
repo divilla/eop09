@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/divilla/eop09/crudproto"
+	"github.com/divilla/eop09/entityproto"
 	"github.com/divilla/eop09/server/config"
 	"github.com/divilla/eop09/server/internal/rpc"
 	"github.com/divilla/eop09/server/pkg/cmongo"

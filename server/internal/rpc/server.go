@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	pb "github.com/divilla/eop09/crudproto"
+	pb "github.com/divilla/eop09/entityproto"
 	"github.com/divilla/eop09/server/internal/domain"
 	"github.com/divilla/eop09/server/internal/dto"
 	i "github.com/divilla/eop09/server/internal/interfaces"

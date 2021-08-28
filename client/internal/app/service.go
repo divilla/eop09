@@ -5,7 +5,7 @@ import (
 	"fmt"
 	i "github.com/divilla/eop09/client/internal/interfaces"
 	"github.com/divilla/eop09/client/pkg/jsondecimals"
-	"github.com/divilla/eop09/crudproto"
+	"github.com/divilla/eop09/entityproto"
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
