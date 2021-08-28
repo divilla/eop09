@@ -136,7 +136,7 @@ func (s *Server) Put(ctx context.Context, in *pb.PkEntity) (*pb.CommandResponse,
 		return nil, err
 	}
 
-	err = s.repository.UpdateOne(ctx, in.GetOldKey(), port)
+	err = s.repository.ReplaceOne(ctx, in.GetOldKey(), port)
 	if err != nil {
 		err = fmt.Errorf("failed to update value in db: %w", err)
 		return nil, err

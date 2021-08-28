@@ -28,32 +28,32 @@ func newService(client i.GRPCClient, reader i.JsonReader, logger i.Logger) *serv
 	}
 }
 
-func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, error) {
+func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *crudproto.IndexResponse, error) {
 	var value json.RawMessage
 	var err error
 
-	req, err := s.client.Index(ctx, &crudproto.IndexRequest{
+	res, err := s.client.Index(ctx, &crudproto.IndexRequest{
 		Page:     page,
 		PageSize: pageSize,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	res := []byte(`{}`)
-	for _, v := range req.GetResults() {
+	response := []byte(`{}`)
+	for _, v := range res.GetResults() {
 		value, err = jsondecimals.Unquote(v.GetValue(), "coordinates")
 		if err != nil {
 			s.logger.Error(err)
 		}
 
-		res, err = sjson.SetRawBytes(res, v.GetKey(), value)
+		response, err = sjson.SetRawBytes(response, v.GetKey(), value)
 		if err != nil {
 			s.logger.Errorf("error setting json key & value: %w", err)
 		}
 	}
 
-	return res, nil
+	return response, res, nil
 }
 
 func (s *service) get(ctx context.Context, key string) ([]byte, error) {

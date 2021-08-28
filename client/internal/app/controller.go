@@ -5,6 +5,7 @@ import (
 	. "github.com/divilla/eop09/client/pkg/cecho"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	"strconv"
 )
 
 type controller struct {
@@ -29,14 +30,18 @@ func Controller(e *echo.Echo, client i.GRPCClient, reader i.JsonReader) {
 }
 
 func (c *controller) index(ctx i.Context) error {
-	res, err := c.service.index(ctx.RequestContext(),
+	response, res, err := c.service.index(ctx.RequestContext(),
 		ctx.QueryParamInt64("page", 1),
 		ctx.QueryParamInt64("results", 30))
 	if err != nil {
 		return err
 	}
 
-	return ctx.JSONBytes(http.StatusOK, res)
+	ctx.Response().Header().Set("X-Pagination-Total-Count", strconv.FormatInt(res.TotalResults, 10))
+	ctx.Response().Header().Set("X-Pagination-Page-Count", strconv.FormatInt(res.TotalPages, 10))
+	ctx.Response().Header().Set("X-Pagination-Current-Page", strconv.FormatInt(res.Page, 10))
+	ctx.Response().Header().Set("X-Pagination-Per-Page", strconv.FormatInt(res.PageSize, 10))
+	return ctx.JSONBytes(http.StatusOK, response)
 }
 
 func (c *controller) get(ctx i.Context) error {
