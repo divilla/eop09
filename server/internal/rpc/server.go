@@ -9,7 +9,6 @@ import (
 	"github.com/divilla/eop09/server/internal/dto"
 	i "github.com/divilla/eop09/server/internal/interfaces"
 	"github.com/tidwall/sjson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"io"
 	"math"
 	"net/http"
@@ -69,7 +68,7 @@ func (s *Server) Index(ctx context.Context, in *pb.IndexRequest) (*pb.IndexRespo
 }
 
 //Get returns single entity found by key (id)
-func (s *Server) Get(ctx context.Context, in *pb.PkRequest) (*pb.Entity, error) {
+func (s *Server) Get(ctx context.Context, in *pb.KeyRequest) (*pb.Entity, error) {
 	var port domain.Port
 	err := s.repository.FindOne(ctx, in.GetKey(), &port)
 	if err != nil {
@@ -90,7 +89,7 @@ func (s *Server) Get(ctx context.Context, in *pb.PkRequest) (*pb.Entity, error) 
 //Create creates new document in db
 func (s *Server) Create(ctx context.Context, in *pb.Entity) (*pb.CommandResponse, error) {
 	port := new(dto.PortDto)
-	err := unmarshalPortDto(port, in, true)
+	err := unmarshalAndValidatePortDto(port, in, true)
 	if err != nil {
 		return nil, err
 	}
@@ -107,14 +106,14 @@ func (s *Server) Create(ctx context.Context, in *pb.Entity) (*pb.CommandResponse
 }
 
 //Patch updates values of existing document with the same id
-func (s *Server) Patch(ctx context.Context, in *pb.PkEntity) (*pb.CommandResponse, error) {
+func (s *Server) Patch(ctx context.Context, in *pb.KeyEntity) (*pb.CommandResponse, error) {
 	port := new(dto.PortDto)
 	err := s.repository.FindOne(ctx, in.GetOldKey(), port)
 	if err != nil {
 		return nil, err
 	}
 
-	err = unmarshalPkPortDto(port, in, true)
+	err = unmarshalAndValidateKeyPortDto(port, in, true)
 	if err != nil {
 		return nil, err
 	}
@@ -129,9 +128,9 @@ func (s *Server) Patch(ctx context.Context, in *pb.PkEntity) (*pb.CommandRespons
 }
 
 //Put replaces document with the new one with the same id
-func (s *Server) Put(ctx context.Context, in *pb.PkEntity) (*pb.CommandResponse, error) {
+func (s *Server) Put(ctx context.Context, in *pb.KeyEntity) (*pb.CommandResponse, error) {
 	port := new(dto.PortDto)
-	err := unmarshalPkPortDto(port, in, true)
+	err := unmarshalAndValidateKeyPortDto(port, in, true)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +145,7 @@ func (s *Server) Put(ctx context.Context, in *pb.PkEntity) (*pb.CommandResponse,
 }
 
 //Delete deletes entity found by key (id)
-func (s *Server) Delete(ctx context.Context, in *pb.PkRequest) (*pb.CommandResponse, error) {
+func (s *Server) Delete(ctx context.Context, in *pb.KeyRequest) (*pb.CommandResponse, error) {
 	err := s.repository.DeleteOne(ctx, in.GetKey())
 	if err != nil {
 		err = fmt.Errorf("failed to delete key: %w", err)
@@ -178,7 +177,7 @@ func (s *Server) Import(stream pb.RPC_ImportServer) error {
 		}
 
 		port := new(dto.PortDto)
-		err = unmarshalPortDto(port, entity, false)
+		err = unmarshalAndValidatePortDto(port, entity, false)
 		if err != nil {
 			s.logger.Error(err)
 			res.Success = false
@@ -197,27 +196,14 @@ func (s *Server) Import(stream pb.RPC_ImportServer) error {
 	}
 }
 
-func unmarshalPort(e *pb.Entity) (*domain.Port, error) {
-	p := new(domain.Port)
-	err := json.Unmarshal(e.GetValue(), p)
-	if err != nil {
-		err = fmt.Errorf("failed to unmarshal domain.Port: %w", err)
-		return nil, err
-	}
-	p.Key = e.Key
-	p.Id = primitive.NewObjectID()
-
-	return p, nil
-}
-
-func unmarshalPkPortDto(p *dto.PortDto, e *pb.PkEntity, val bool) error {
-	return unmarshalPortDto(p, &pb.Entity{
+func unmarshalAndValidateKeyPortDto(p *dto.PortDto, e *pb.KeyEntity, validate bool) error {
+	return unmarshalAndValidatePortDto(p, &pb.Entity{
 		Key:   e.GetKey(),
 		Value: e.GetValue(),
-	}, val)
+	}, validate)
 }
 
-func unmarshalPortDto(p *dto.PortDto, e *pb.Entity, val bool) error {
+func unmarshalAndValidatePortDto(p *dto.PortDto, e *pb.Entity, validate bool) error {
 	err := json.Unmarshal(e.GetValue(), p)
 	if err != nil {
 		err = fmt.Errorf("failed to unmarshal domain.Port: %w", err)
@@ -225,7 +211,7 @@ func unmarshalPortDto(p *dto.PortDto, e *pb.Entity, val bool) error {
 	}
 	p.Key = e.Key
 
-	if val {
+	if validate {
 		validationErrors := p.Validate()
 		if validationErrors == nil {
 			return nil

@@ -23,4 +23,4 @@ require (
 	google.golang.org/grpc v1.40.0
 )
 
-replace github.com/divilla/eop09/crudproto => ./../crudproto
+replace github.com/divilla/eop09/crudproto => ./../entityproto

@@ -1,16 +1,16 @@
 syntax = "proto3";
 
-option go_package = "github.com/divilla/eop09/crudproto";
+option go_package = "github.com/divilla/eop09/entityproto";
 
-package crudproto;
+package entityproto;
 
 service RPC {
   rpc Index (IndexRequest) returns (IndexResponse) {}
-  rpc Get (PkRequest) returns (Entity) {}
+  rpc Get (KeyRequest) returns (Entity) {}
   rpc Create (Entity) returns (CommandResponse) {}
-  rpc Patch (PkEntity) returns (CommandResponse) {}
-  rpc Put (PkEntity) returns (CommandResponse) {}
-  rpc Delete (PkRequest) returns (CommandResponse) {}
+  rpc Patch (KeyEntity) returns (CommandResponse) {}
+  rpc Put (KeyEntity) returns (CommandResponse) {}
+  rpc Delete (KeyRequest) returns (CommandResponse) {}
   rpc Import (stream Entity) returns (ImportResponse) {}
 }
 
@@ -19,7 +19,7 @@ message Entity {
   bytes value = 2;
 }
 
-message PkEntity {
+message KeyEntity {
   string oldKey = 1;
   string key = 2;
   bytes value = 3;
@@ -30,7 +30,7 @@ message IndexRequest {
   int64 pageSize = 2;
 }
 
-message PkRequest {
+message KeyRequest {
   string key = 1;
 }
 

@@ -11,7 +11,6 @@ require (
 	github.com/labstack/gommon v0.3.0
 	github.com/mattn/go-isatty v0.0.13 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/viper v1.8.1
 	github.com/tidwall/gjson v1.8.1
 	github.com/tidwall/pretty v1.2.0 // indirect
@@ -25,4 +24,4 @@ require (
 	google.golang.org/grpc v1.40.0
 )
 
-replace github.com/divilla/eop09/crudproto => ./../crudproto
+replace github.com/divilla/eop09/crudproto => ./../entityproto

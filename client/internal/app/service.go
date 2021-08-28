@@ -28,11 +28,11 @@ func newService(client i.GRPCClient, reader i.JsonReader, logger i.Logger) *serv
 	}
 }
 
-func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *crudproto.IndexResponse, error) {
+func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *entityproto.IndexResponse, error) {
 	var value json.RawMessage
 	var err error
 
-	res, err := s.client.Index(ctx, &crudproto.IndexRequest{
+	res, err := s.client.Index(ctx, &entityproto.IndexRequest{
 		Page:     page,
 		PageSize: pageSize,
 	})
@@ -57,7 +57,7 @@ func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *cru
 }
 
 func (s *service) get(ctx context.Context, key string) ([]byte, error) {
-	entity, err := s.client.Get(ctx, &crudproto.PkRequest{Key: key})
+	entity, err := s.client.Get(ctx, &entityproto.KeyRequest{Key: key})
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (s *service) get(ctx context.Context, key string) ([]byte, error) {
 	return sjson.SetRawBytes(res, entity.GetKey(), value)
 }
 
-func (s *service) create(ctx context.Context, result gjson.Result) (*crudproto.CommandResponse, error) {
+func (s *service) create(ctx context.Context, result gjson.Result) (*entityproto.CommandResponse, error) {
 	var key, value string
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
@@ -84,13 +84,13 @@ func (s *service) create(ctx context.Context, result gjson.Result) (*crudproto.C
 		return nil, err
 	}
 
-	return s.client.Create(ctx, &crudproto.Entity{
+	return s.client.Create(ctx, &entityproto.Entity{
 		Key:   key,
 		Value: val,
 	})
 }
 
-func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result) (*crudproto.CommandResponse, error) {
+func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result) (*entityproto.CommandResponse, error) {
 	var key, value string
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
@@ -103,14 +103,14 @@ func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result)
 		return nil, err
 	}
 
-	return s.client.Patch(ctx, &crudproto.PkEntity{
+	return s.client.Patch(ctx, &entityproto.KeyEntity{
 		OldKey: oldKey,
 		Key:    key,
 		Value:  val,
 	})
 }
 
-func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (*crudproto.CommandResponse, error) {
+func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (*entityproto.CommandResponse, error) {
 	var key, value string
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
@@ -123,20 +123,20 @@ func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (
 		return nil, err
 	}
 
-	return s.client.Put(ctx, &crudproto.PkEntity{
+	return s.client.Put(ctx, &entityproto.KeyEntity{
 		OldKey: oldKey,
 		Key:    key,
 		Value:  val,
 	})
 }
 
-func (s *service) delete(ctx context.Context, key string) (*crudproto.CommandResponse, error) {
-	return s.client.Delete(ctx, &crudproto.PkRequest{
+func (s *service) delete(ctx context.Context, key string) (*entityproto.CommandResponse, error) {
+	return s.client.Delete(ctx, &entityproto.KeyRequest{
 		Key: key,
 	})
 }
 
-func (s *service) importer(ctx context.Context) (*crudproto.ImportResponse, error) {
+func (s *service) importer(ctx context.Context) (*entityproto.ImportResponse, error) {
 	var index uint64
 	var key string
 	var value json.RawMessage
@@ -169,7 +169,7 @@ func (s *service) importer(ctx context.Context) (*crudproto.ImportResponse, erro
 			s.logger.Error(err)
 		}
 
-		err = impCli.Send(&crudproto.Entity{
+		err = impCli.Send(&entityproto.Entity{
 			Key:   key,
 			Value: value,
 		})

@@ -10,7 +10,7 @@ import (
 )
 
 type Client struct {
-	crudproto.RPCClient
+	entityproto.RPCClient
 	serverAddress string
 	conn          *grpc.ClientConn
 	logger        i.Logger
@@ -56,6 +56,6 @@ func (c *Client) dial() {
 		c.logger.Panicf("gRPC client failed to connect: %w", err)
 	} else {
 		c.conn = conn
-		c.RPCClient = crudproto.NewRPCClient(conn)
+		c.RPCClient = entityproto.NewRPCClient(conn)
 	}
 }

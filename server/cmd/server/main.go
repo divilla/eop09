@@ -32,7 +32,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	crudproto.RegisterRPCServer(s, rpc.NewServer(rep, logger))
+	entityproto.RegisterRPCServer(s, rpc.NewServer(rep, logger))
 	logger.Printf("server listening at %v", lis.Addr())
 	if err := s.Serve(lis); err != nil {
 		logger.Fatalf("failed to serve: %v", err)
