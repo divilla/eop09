@@ -9,7 +9,7 @@ import (
 )
 
 type (
-	PortDto struct {
+	Port struct {
 		Key         string                 `json:"-" bson:"key"`
 		Name        string                 `json:"name" bson:"name"`
 		City        string                 `json:"city" bson:"city"`
@@ -26,7 +26,7 @@ type (
 	Errors []byte
 )
 
-func (p *PortDto) Validate() validation.Errors {
+func (p *Port) Validate() validation.Errors {
 	err := validation.ValidateStruct(p,
 		validation.Field(&p.Key, validation.Required.Error("required"),
 			validation.Match(regexp.MustCompile("^[A-Z]{5}$")).Error("must be 5 uppercase letters word")),

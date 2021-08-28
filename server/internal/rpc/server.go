@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	pb "github.com/divilla/eop09/entityproto"
-	"github.com/divilla/eop09/server/internal/domain"
 	"github.com/divilla/eop09/server/internal/dto"
 	i "github.com/divilla/eop09/server/internal/interfaces"
 	"github.com/tidwall/sjson"
@@ -31,7 +30,7 @@ func NewServer(repository i.Repository, logger i.Logger) *Server {
 
 //Index returns batch of Entities
 func (s *Server) Index(ctx context.Context, in *pb.IndexRequest) (*pb.IndexResponse, error) {
-	var es []domain.Port
+	var es []dto.Port
 
 	totalResults, err := s.repository.CountAll(ctx)
 	if err != nil {
@@ -69,7 +68,7 @@ func (s *Server) Index(ctx context.Context, in *pb.IndexRequest) (*pb.IndexRespo
 
 //Get returns single entity found by key (id)
 func (s *Server) Get(ctx context.Context, in *pb.KeyRequest) (*pb.Entity, error) {
-	var port domain.Port
+	var port dto.Port
 	err := s.repository.FindOne(ctx, in.GetKey(), &port)
 	if err != nil {
 		return nil, err
@@ -88,7 +87,7 @@ func (s *Server) Get(ctx context.Context, in *pb.KeyRequest) (*pb.Entity, error)
 
 //Create creates new document in db
 func (s *Server) Create(ctx context.Context, in *pb.Entity) (*pb.CommandResponse, error) {
-	port := new(dto.PortDto)
+	port := new(dto.Port)
 	err := unmarshalAndValidatePortDto(port, in, true)
 	if err != nil {
 		return nil, err
@@ -107,7 +106,7 @@ func (s *Server) Create(ctx context.Context, in *pb.Entity) (*pb.CommandResponse
 
 //Patch updates values of existing document with the same id
 func (s *Server) Patch(ctx context.Context, in *pb.KeyEntity) (*pb.CommandResponse, error) {
-	port := new(dto.PortDto)
+	port := new(dto.Port)
 	err := s.repository.FindOne(ctx, in.GetOldKey(), port)
 	if err != nil {
 		return nil, err
@@ -129,7 +128,7 @@ func (s *Server) Patch(ctx context.Context, in *pb.KeyEntity) (*pb.CommandRespon
 
 //Put replaces document with the new one with the same id
 func (s *Server) Put(ctx context.Context, in *pb.KeyEntity) (*pb.CommandResponse, error) {
-	port := new(dto.PortDto)
+	port := new(dto.Port)
 	err := unmarshalAndValidateKeyPortDto(port, in, true)
 	if err != nil {
 		return nil, err
@@ -176,7 +175,7 @@ func (s *Server) Import(stream pb.RPC_ImportServer) error {
 			return err
 		}
 
-		port := new(dto.PortDto)
+		port := new(dto.Port)
 		err = unmarshalAndValidatePortDto(port, entity, false)
 		if err != nil {
 			s.logger.Error(err)
@@ -196,14 +195,14 @@ func (s *Server) Import(stream pb.RPC_ImportServer) error {
 	}
 }
 
-func unmarshalAndValidateKeyPortDto(p *dto.PortDto, e *pb.KeyEntity, validate bool) error {
+func unmarshalAndValidateKeyPortDto(p *dto.Port, e *pb.KeyEntity, validate bool) error {
 	return unmarshalAndValidatePortDto(p, &pb.Entity{
 		Key:   e.GetKey(),
 		Value: e.GetValue(),
 	}, validate)
 }
 
-func unmarshalAndValidatePortDto(p *dto.PortDto, e *pb.Entity, validate bool) error {
+func unmarshalAndValidatePortDto(p *dto.Port, e *pb.Entity, validate bool) error {
 	err := json.Unmarshal(e.GetValue(), p)
 	if err != nil {
 		err = fmt.Errorf("failed to unmarshal domain.Port: %w", err)
