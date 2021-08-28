@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"github.com/divilla/eop09/client/config"
-	"github.com/divilla/eop09/client/internal/grpcc"
-	importer "github.com/divilla/eop09/client/internal/import"
+	"github.com/divilla/eop09/client/internal/app"
+	"github.com/divilla/eop09/client/internal/cgrpc"
 	"github.com/divilla/eop09/client/internal/probe"
-	"github.com/divilla/eop09/client/pkg/cmiddleware"
+	"github.com/divilla/eop09/client/pkg/cecho"
+	"github.com/divilla/eop09/client/pkg/largejsonreader"
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -34,20 +36,23 @@ func main() {
 		LogLevel:  log.ERROR,
 	}))
 
-	e.Use(cmiddleware.NewContext())
-	e.HTTPErrorHandler = cmiddleware.HTTPErrorHandler
+	e.Use(cecho.CContext())
+	e.HTTPErrorHandler = cecho.HTTPErrorHandler
 	//e.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 	//	//Skipper:      middleware.DefaultSkipper,
 	//	ErrorMessage: "request timeout, please try again",
 	//	Timeout:      3*time.Second,
 	//}))
 
-	client, err := grpcc.NewClient(config.App.GRPCServerAddress, e.Logger)
+	client := cgrpc.NewClient(config.App.GRPCServerAddress, e.Logger)
+	defer client.Close()
+
+	reader, err := largejsonreader.New(config.App.JsonDataFile)
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("failed to start largeJsonFile reader: %w", err))
 	}
 
-	importer.Controller(e, client)
+	importer.Controller(e, client, reader)
 	probe.Controller(e)
 
 	go func() {
@@ -56,10 +61,9 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal to gracefully shutdown the server with a timeout of 10 seconds.
-	// Use a buffered channel to avoid missing signals as recommended for signal.Notify
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Kill)
 	<-quit
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

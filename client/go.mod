@@ -5,7 +5,6 @@ go 1.16
 require (
 	github.com/divilla/eop09/crudproto v0.0.0-00010101000000-000000000000
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
-	github.com/jackc/pgx/v4 v4.13.0
 	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/labstack/gommon v0.3.0
@@ -13,6 +12,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/shopspring/decimal v1.2.0
 	github.com/spf13/viper v1.8.1
+	github.com/stretchr/testify v1.7.0 // indirect
 	github.com/tidwall/gjson v1.8.1
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.1.7 // indirect

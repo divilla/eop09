@@ -17,13 +17,14 @@ const (
 type (
 	Reader struct {
 		file     *os.File
+		reader   *bufio.Reader
 		decoder  *json.Decoder
 		jsonType int
 		index    uint64
 	}
 )
 
-func Read(fileName string) (*Reader, error) {
+func New(fileName string) (*Reader, error) {
 	jsonType := Invalid
 	file, err := os.Open(fileName)
 	if err != nil {
@@ -51,12 +52,13 @@ func Read(fileName string) (*Reader, error) {
 
 	return &Reader{
 		file:     file,
+		reader:   reader,
 		decoder:  decoder,
 		jsonType: jsonType,
 	}, nil
 }
 
-func (r *Reader) Next(index *uint64, key *string, value *json.RawMessage) error {
+func (r *Reader) Read(index *uint64, key *string, value *json.RawMessage) error {
 	var token json.Token
 	var err error
 
@@ -89,6 +91,10 @@ func (r *Reader) Next(index *uint64, key *string, value *json.RawMessage) error 
 	r.index++
 
 	return nil
+}
+
+func (r *Reader) Reset() {
+	r.reader.Reset(r.file)
 }
 
 func (r *Reader) Close() error {
