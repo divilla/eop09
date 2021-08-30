@@ -7,11 +7,10 @@ import (
 	pb "github.com/divilla/eop09/entityproto"
 	"github.com/divilla/eop09/server/internal/dto"
 	i "github.com/divilla/eop09/server/internal/interfaces"
-	"github.com/tidwall/sjson"
+	"github.com/tidwall/gjson"
 	"io"
 	"math"
-	"net/http"
-	"strings"
+	"time"
 )
 
 type Server struct {
@@ -32,23 +31,23 @@ func NewServer(repository i.Repository, logger i.Logger) *Server {
 func (s *Server) Index(ctx context.Context, in *pb.IndexRequest) (*pb.IndexResponse, error) {
 	var es []dto.Port
 
-	totalResults, err := s.repository.CountAll(ctx)
+	totalCount, err := s.repository.CountAll(ctx)
 	if err != nil {
 		return nil, err
 	}
-	totalPages := int64(math.Ceil(float64(totalResults) / float64(in.PageSize)))
+	pageCount := int64(math.Ceil(float64(totalCount) / float64(in.GetPerPage())))
 
-	err = s.repository.List(ctx, in.Page, in.PageSize, &es)
+	err = s.repository.List(ctx, in.GetCurrentPage(), in.GetPerPage(), &es)
 	if err != nil {
 		return nil, err
 	}
 
 	lr := &pb.IndexResponse{
-		Page:         in.Page,
-		PageSize:     in.PageSize,
-		Results:      make([]*pb.Entity, len(es)),
-		TotalResults: totalResults,
-		TotalPages:   totalPages,
+		Results:     make([]*pb.Entity, len(es)),
+		CurrentPage: in.CurrentPage,
+		PerPage:     in.PerPage,
+		TotalCount:  totalCount,
+		PageCount:   pageCount,
 	}
 
 	for k, v := range es {
@@ -57,10 +56,7 @@ func (s *Server) Index(ctx context.Context, in *pb.IndexRequest) (*pb.IndexRespo
 			return nil, err
 		}
 
-		lr.Results[k] = &pb.Entity{
-			Key:   v.Key,
-			Value: e,
-		}
+		lr.Results[k] = &pb.Entity{Json: e}
 	}
 
 	return lr, nil
@@ -79,24 +75,18 @@ func (s *Server) Get(ctx context.Context, in *pb.KeyRequest) (*pb.Entity, error)
 		return nil, err
 	}
 
-	return &pb.Entity{
-		Key:   port.Key,
-		Value: value,
-	}, nil
+	return &pb.Entity{Json: value}, nil
 }
 
 //Create creates new document in db
 func (s *Server) Create(ctx context.Context, in *pb.Entity) (*pb.CommandResponse, error) {
 	port := new(dto.Port)
-	err := unmarshalAndValidatePortDto(port, in, true)
+	err := unmarshalAndValidateEntity(port, in)
 	if err != nil {
 		return nil, err
 	}
 
 	err = s.repository.CreateOne(ctx, port)
-	if err != nil && strings.Contains(err.Error(), "E11000") {
-		return nil, dto.NewJsonError(http.StatusBadRequest, "document with requested key already exists")
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -105,19 +95,19 @@ func (s *Server) Create(ctx context.Context, in *pb.Entity) (*pb.CommandResponse
 }
 
 //Patch updates values of existing document with the same id
-func (s *Server) Patch(ctx context.Context, in *pb.KeyEntity) (*pb.CommandResponse, error) {
+func (s *Server) Patch(ctx context.Context, in *pb.KeyEntityRequest) (*pb.CommandResponse, error) {
 	port := new(dto.Port)
-	err := s.repository.FindOne(ctx, in.GetOldKey(), port)
+	err := s.repository.FindOne(ctx, in.GetKey(), port)
 	if err != nil {
 		return nil, err
 	}
 
-	err = unmarshalAndValidateKeyPortDto(port, in, true)
+	err = unmarshalAndValidateKeyEntity(port, in)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.repository.ReplaceOne(ctx, in.GetOldKey(), port)
+	err = s.repository.ReplaceOne(ctx, in.GetKey(), port)
 	if err != nil {
 		err = fmt.Errorf("failed to update value in db: %w", err)
 		return nil, err
@@ -127,14 +117,14 @@ func (s *Server) Patch(ctx context.Context, in *pb.KeyEntity) (*pb.CommandRespon
 }
 
 //Put replaces document with the new one with the same id
-func (s *Server) Put(ctx context.Context, in *pb.KeyEntity) (*pb.CommandResponse, error) {
+func (s *Server) Put(ctx context.Context, in *pb.KeyEntityRequest) (*pb.CommandResponse, error) {
 	port := new(dto.Port)
-	err := unmarshalAndValidateKeyPortDto(port, in, true)
+	err := unmarshalAndValidateKeyEntity(port, in)
 	if err != nil {
 		return nil, err
 	}
 
-	err = s.repository.ReplaceOne(ctx, in.GetOldKey(), port)
+	err = s.repository.ReplaceOne(ctx, in.GetKey(), port)
 	if err != nil {
 		err = fmt.Errorf("failed to update value in db: %w", err)
 		return nil, err
@@ -156,10 +146,12 @@ func (s *Server) Delete(ctx context.Context, in *pb.KeyRequest) (*pb.CommandResp
 
 //Import implements RPC_ImportServer
 func (s *Server) Import(stream pb.RPC_ImportServer) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 60 * time.Second)
+	defer cancel()
+
 	res := &pb.ImportResponse{
 		Success:      true,
 		RowsAffected: int64(0),
-		Errors:       "",
 	}
 	jErrors := newJsonErrors()
 
@@ -170,83 +162,28 @@ func (s *Server) Import(stream pb.RPC_ImportServer) error {
 			return stream.SendAndClose(res)
 		}
 		if err != nil {
-			err = fmt.Errorf("error while receiving stream: %w", err)
-			s.logger.Error(err)
-			return err
+			return fmt.Errorf("error receiving import stream: %w", err)
 		}
 
 		port := new(dto.Port)
-		err = unmarshalAndValidatePortDto(port, entity, false)
-		if err != nil {
+		if err = unmarshalAndValidateEntity(port, entity); err != nil {
 			s.logger.Error(err)
 			res.Success = false
-			jErrors.Add(entity.Key, entity.Value)
+			if err := jErrors.Add(entity.GetJson()); err != nil {
+				return err
+			}
+			continue
 		}
 
-		err = s.repository.UpsertOne(context.TODO(), entity.Key, port)
+		err = s.repository.UpsertOne(ctx, gjson.GetBytes(entity.GetJson(), KeyPath).String(), port)
 		if err != nil {
-			err = fmt.Errorf("failed to save domain.Port '%s' with error: %w", string(entity.GetValue()), err)
 			s.logger.Error(err)
 			res.Success = false
-			jErrors.Add(entity.Key, entity.Value)
+			if err := jErrors.Add(entity.GetJson()); err != nil {
+				return err
+			}
 		} else {
 			res.RowsAffected++
 		}
 	}
-}
-
-func unmarshalAndValidateKeyPortDto(p *dto.Port, e *pb.KeyEntity, validate bool) error {
-	return unmarshalAndValidatePortDto(p, &pb.Entity{
-		Key:   e.GetKey(),
-		Value: e.GetValue(),
-	}, validate)
-}
-
-func unmarshalAndValidatePortDto(p *dto.Port, e *pb.Entity, validate bool) error {
-	err := json.Unmarshal(e.GetValue(), p)
-	if err != nil {
-		err = fmt.Errorf("failed to unmarshal domain.Port: %w", err)
-		return err
-	}
-	p.Key = e.Key
-
-	if validate {
-		validationErrors := p.Validate()
-		if validationErrors == nil {
-			return nil
-		}
-
-		jsonErrors, err := validationErrors.MarshalJSON()
-		if err != nil {
-			return fmt.Errorf("marshaling validation errors failed: %w", err)
-		}
-
-		return dto.NewValidationErrors(jsonErrors)
-	}
-
-	return nil
-}
-
-func newCommandResponse(rows int64) *pb.CommandResponse {
-	return &pb.CommandResponse{
-		RowsAffected: rows,
-	}
-}
-
-type jsonErrors json.RawMessage
-
-func newJsonErrors() *jsonErrors {
-	return &jsonErrors{}
-}
-
-func (j *jsonErrors) Add(key string, value []byte) *jsonErrors {
-	*j, _ = sjson.SetRawBytes(*j, key, value)
-	return j
-}
-
-func (j *jsonErrors) Errors() string {
-	if len(*j) == 0 {
-		return ""
-	}
-	return string(*j)
 }

@@ -37,10 +37,11 @@ func (c *controller) index(ctx i.Context) error {
 		return err
 	}
 
-	ctx.Response().Header().Set("X-Pagination-Total-Count", strconv.FormatInt(res.TotalResults, 10))
-	ctx.Response().Header().Set("X-Pagination-Page-Count", strconv.FormatInt(res.TotalPages, 10))
-	ctx.Response().Header().Set("X-Pagination-Current-Page", strconv.FormatInt(res.Page, 10))
-	ctx.Response().Header().Set("X-Pagination-Per-Page", strconv.FormatInt(res.PageSize, 10))
+	ctx.Response().Header().Set("X-Pagination-Total-Count", strconv.FormatInt(res.TotalCount, 10))
+	ctx.Response().Header().Set("X-Pagination-Page-Count", strconv.FormatInt(res.PageCount, 10))
+	ctx.Response().Header().Set("X-Pagination-Current-Page", strconv.FormatInt(res.CurrentPage, 10))
+	ctx.Response().Header().Set("X-Pagination-Per-Page", strconv.FormatInt(res.PerPage, 10))
+
 	return ctx.JSONBytes(http.StatusOK, response)
 }
 
@@ -54,7 +55,7 @@ func (c *controller) get(ctx i.Context) error {
 }
 
 func (c *controller) create(ctx i.Context) error {
-	req, err := ctx.BodyJson()
+	req, err := ctx.BodyGJson()
 	if err != nil {
 		return err
 	}
@@ -68,7 +69,7 @@ func (c *controller) create(ctx i.Context) error {
 }
 
 func (c *controller) patch(ctx i.Context) error {
-	req, err := ctx.BodyJson()
+	req, err := ctx.BodyGJson()
 	if err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func (c *controller) patch(ctx i.Context) error {
 }
 
 func (c *controller) put(ctx i.Context) error {
-	req, err := ctx.BodyJson()
+	req, err := ctx.BodyGJson()
 	if err != nil {
 		return err
 	}
@@ -105,13 +106,13 @@ func (c *controller) delete(ctx i.Context) error {
 }
 
 func (c *controller) importer(ctx i.Context) error {
-	res, err := c.service.importer(ctx.RequestContext())
+	res, success, err := c.service.importer(ctx.RequestContext())
 	if err != nil {
 		return err
 	}
 
 	status := http.StatusOK
-	if !res.Success {
+	if !success {
 		status = http.StatusBadRequest
 	}
 

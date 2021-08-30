@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	i "github.com/divilla/eop09/client/internal/interfaces"
-	"github.com/divilla/eop09/client/pkg/jsondecimals"
 	pb "github.com/divilla/eop09/entityproto"
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
@@ -28,32 +27,33 @@ func newService(client i.GRPCClient, reader i.JsonReader, logger i.Logger) *serv
 	}
 }
 
-func (s *service) index(ctx context.Context, page, pageSize int64) ([]byte, *pb.IndexResponse, error) {
+func (s *service) index(ctx context.Context, currentPage, perPage int64) ([]byte, *pb.IndexResponse, error) {
+	var key string
 	var value json.RawMessage
 	var err error
 
-	res, err := s.client.Index(ctx, &pb.IndexRequest{
-		Page:     page,
-		PageSize: pageSize,
+	indexResponse, err := s.client.Index(ctx, &pb.IndexRequest{
+		CurrentPage: currentPage,
+		PerPage:     perPage,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to receive IndexResponse: %w", err)
 	}
 
-	response := []byte(`{}`)
-	for _, v := range res.GetResults() {
-		value, err = jsondecimals.Unquote(v.GetValue(), "coordinates")
+	res := []byte(`{}`)
+	for _, v := range indexResponse.GetResults() {
+		key, value, err = decodeEntityJson(v.GetJson())
 		if err != nil {
-			s.logger.Error(err)
+			return nil, nil, fmt.Errorf("failed to decode Entity json: %w", err)
 		}
 
-		response, err = sjson.SetRawBytes(response, v.GetKey(), value)
+		res, err = sjson.SetRawBytes(res, key, value)
 		if err != nil {
-			s.logger.Errorf("error setting json key & value: %w", err)
+			return nil, nil, fmt.Errorf("error building index json response: %w", err)
 		}
 	}
 
-	return response, res, nil
+	return res, indexResponse, nil
 }
 
 func (s *service) get(ctx context.Context, key string) ([]byte, error) {
@@ -62,71 +62,71 @@ func (s *service) get(ctx context.Context, key string) ([]byte, error) {
 		return nil, err
 	}
 
-	value, err := jsondecimals.Unquote(entity.GetValue(), "coordinates")
+	key, value, err := decodeEntityJson(entity.GetJson())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode Entity json: %w", err)
 	}
 
-	res := []byte(`{}`)
-	return sjson.SetRawBytes(res, entity.GetKey(), value)
+	return sjson.SetRawBytes([]byte(`{}`), key, value)
 }
 
-func (s *service) create(ctx context.Context, result gjson.Result) (*pb.CommandResponse, error) {
-	var key, value string
+func (s *service) create(ctx context.Context, result *gjson.Result) (*pb.CommandResponse, error) {
+	var key string
+	var value *gjson.Result
+
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
-		value = v.Raw
+		value = &v
 		return false
 	})
 
-	val, err := jsondecimals.Quote([]byte(value), "coordinates")
+	res, err := encodeEntityJson(key, value)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to encode Entity json: %w", err)
 	}
 
-	return s.client.Create(ctx, &pb.Entity{
-		Key:   key,
-		Value: val,
-	})
+	return s.client.Create(ctx, &pb.Entity{Json: res})
 }
 
-func (s *service) patch(ctx context.Context, oldKey string, result gjson.Result) (*pb.CommandResponse, error) {
-	var key, value string
+func (s *service) patch(ctx context.Context, currentKey string, result *gjson.Result) (*pb.CommandResponse, error) {
+	var key string
+	var value *gjson.Result
+
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
-		value = v.Raw
+		value = &v
 		return false
 	})
 
-	val, err := jsondecimals.Quote([]byte(value), "coordinates")
+	res, err := encodeEntityJson(key, value)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to encode Entity json: %w", err)
 	}
 
-	return s.client.Patch(ctx, &pb.KeyEntity{
-		OldKey: oldKey,
-		Key:    key,
-		Value:  val,
+	return s.client.Patch(ctx, &pb.KeyEntityRequest{
+		Key:  currentKey,
+		Json: res,
 	})
 }
 
-func (s *service) put(ctx context.Context, oldKey string, result gjson.Result) (*pb.CommandResponse, error) {
-	var key, value string
+func (s *service) put(ctx context.Context, currentKey string, result *gjson.Result) (*pb.CommandResponse, error) {
+	var key string
+	var value *gjson.Result
+
 	result.ForEach(func(k, v gjson.Result) bool {
 		key = k.String()
-		value = v.Raw
+		value = &v
 		return false
 	})
 
-	val, err := jsondecimals.Quote([]byte(value), "coordinates")
+	res, err := encodeEntityJson(key, value)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to encode Entity json: %w", err)
 	}
 
-	return s.client.Put(ctx, &pb.KeyEntity{
-		OldKey: oldKey,
-		Key:    key,
-		Value:  val,
+	return s.client.Put(ctx, &pb.KeyEntityRequest{
+		Key:  currentKey,
+		Json: res,
 	})
 }
 
@@ -136,24 +136,24 @@ func (s *service) delete(ctx context.Context, key string) (*pb.CommandResponse, 
 	})
 }
 
-func (s *service) importer(ctx context.Context) (*pb.ImportResponse, error) {
+func (s *service) importer(ctx context.Context) (json.RawMessage, bool, error) {
 	var index uint64
 	var key string
 	var value json.RawMessage
 	var err error
 
 	if !s.client.IsConnected() {
-		return nil, echo.NewHTTPError(http.StatusGone, "gRPC client not connected, please try again later")
+		return nil, false, echo.NewHTTPError(http.StatusGone, "gRPC client not connected, please try again later")
 	}
 
 	impCli, err := s.client.Import(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open grpc upstream: %w", err)
+		return nil, false, fmt.Errorf("failed to open grpc upstream: %w", err)
 	}
 
 	err = s.reader.Start()
 	if err != nil {
-		return nil, fmt.Errorf("json reader failed to start: %w", err)
+		return nil, false, fmt.Errorf("json reader failed to start: %w", err)
 	}
 	for {
 		err = s.reader.Read(&index, &key, &value)
@@ -161,31 +161,34 @@ func (s *service) importer(ctx context.Context) (*pb.ImportResponse, error) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("json file read error: %w", err)
+			return nil, false, fmt.Errorf("json file read error: %w", err)
 		}
 
-		value, err = jsondecimals.Quote(value, "coordinates")
+		result := gjson.ParseBytes(value)
+		value, err = encodeEntityJson(key, &result)
 		if err != nil {
-			s.logger.Error(err)
+			return nil, false, fmt.Errorf("import json encoding failed: %w", err)
 		}
 
-		err = impCli.Send(&pb.Entity{
-			Key:   key,
-			Value: value,
-		})
+		err = impCli.Send(&pb.Entity{Json: value})
 		if err != nil {
-			s.logger.Errorf("grpc upstream send failed: %w", err)
+			return nil, false, fmt.Errorf("gRPC upstream send failed: %w", err)
 		}
 	}
 	err = s.reader.Close()
 	if err != nil {
-		return nil, fmt.Errorf("json reader failed to close: %w", err)
+		return nil, false, fmt.Errorf("json reader failed to close: %w", err)
 	}
 
-	res, err := impCli.CloseAndRecv()
+	ir, err := impCli.CloseAndRecv()
 	if err != nil {
-		return nil, err
+		return nil, false, fmt.Errorf("gRPC import client failed to close and receive: %w", err)
 	}
 
-	return res, nil
+	res, success, err := parseImportResponse(ir)
+	if err != nil {
+		return nil, false, fmt.Errorf("failed to parse import result: %w", err)
+	}
+
+	return res, success, nil
 }

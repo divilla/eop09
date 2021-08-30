@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/net/context"
 	"net/http"
+	"strings"
 )
 
 type (
@@ -39,7 +40,7 @@ func (r *repository) List(ctx context.Context, pageNumber, pageSize int64, resul
 	return cur.All(ctx, results)
 }
 
-func (r *repository) FindOne(ctx context.Context, key interface{}, v interface{}) error {
+func (r *repository) FindOne(ctx context.Context, key interface{}, document interface{}) error {
 	dbc, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -52,7 +53,7 @@ func (r *repository) FindOne(ctx context.Context, key interface{}, v interface{}
 		return res.Err()
 	}
 
-	return res.Decode(v)
+	return res.Decode(document)
 }
 
 func (r *repository) CreateOne(ctx context.Context, document interface{}) error {
@@ -60,6 +61,10 @@ func (r *repository) CreateOne(ctx context.Context, document interface{}) error 
 	defer cancel()
 
 	_, err := r.collection.InsertOne(dbc, document)
+	if err != nil && strings.Contains(err.Error(), "E11000") {
+		return NewJsonError(http.StatusBadRequest, "document with requested key already exists")
+	}
+
 	return err
 }
 

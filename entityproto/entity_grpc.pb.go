@@ -21,8 +21,8 @@ type RPCClient interface {
 	Index(ctx context.Context, in *IndexRequest, opts ...grpc.CallOption) (*IndexResponse, error)
 	Get(ctx context.Context, in *KeyRequest, opts ...grpc.CallOption) (*Entity, error)
 	Create(ctx context.Context, in *Entity, opts ...grpc.CallOption) (*CommandResponse, error)
-	Patch(ctx context.Context, in *KeyEntity, opts ...grpc.CallOption) (*CommandResponse, error)
-	Put(ctx context.Context, in *KeyEntity, opts ...grpc.CallOption) (*CommandResponse, error)
+	Patch(ctx context.Context, in *KeyEntityRequest, opts ...grpc.CallOption) (*CommandResponse, error)
+	Put(ctx context.Context, in *KeyEntityRequest, opts ...grpc.CallOption) (*CommandResponse, error)
 	Delete(ctx context.Context, in *KeyRequest, opts ...grpc.CallOption) (*CommandResponse, error)
 	Import(ctx context.Context, opts ...grpc.CallOption) (RPC_ImportClient, error)
 }
@@ -62,7 +62,7 @@ func (c *rPCClient) Create(ctx context.Context, in *Entity, opts ...grpc.CallOpt
 	return out, nil
 }
 
-func (c *rPCClient) Patch(ctx context.Context, in *KeyEntity, opts ...grpc.CallOption) (*CommandResponse, error) {
+func (c *rPCClient) Patch(ctx context.Context, in *KeyEntityRequest, opts ...grpc.CallOption) (*CommandResponse, error) {
 	out := new(CommandResponse)
 	err := c.cc.Invoke(ctx, "/entityproto.RPC/Patch", in, out, opts...)
 	if err != nil {
@@ -71,7 +71,7 @@ func (c *rPCClient) Patch(ctx context.Context, in *KeyEntity, opts ...grpc.CallO
 	return out, nil
 }
 
-func (c *rPCClient) Put(ctx context.Context, in *KeyEntity, opts ...grpc.CallOption) (*CommandResponse, error) {
+func (c *rPCClient) Put(ctx context.Context, in *KeyEntityRequest, opts ...grpc.CallOption) (*CommandResponse, error) {
 	out := new(CommandResponse)
 	err := c.cc.Invoke(ctx, "/entityproto.RPC/Put", in, out, opts...)
 	if err != nil {
@@ -130,8 +130,8 @@ type RPCServer interface {
 	Index(context.Context, *IndexRequest) (*IndexResponse, error)
 	Get(context.Context, *KeyRequest) (*Entity, error)
 	Create(context.Context, *Entity) (*CommandResponse, error)
-	Patch(context.Context, *KeyEntity) (*CommandResponse, error)
-	Put(context.Context, *KeyEntity) (*CommandResponse, error)
+	Patch(context.Context, *KeyEntityRequest) (*CommandResponse, error)
+	Put(context.Context, *KeyEntityRequest) (*CommandResponse, error)
 	Delete(context.Context, *KeyRequest) (*CommandResponse, error)
 	Import(RPC_ImportServer) error
 	mustEmbedUnimplementedRPCServer()
@@ -150,10 +150,10 @@ func (UnimplementedRPCServer) Get(context.Context, *KeyRequest) (*Entity, error)
 func (UnimplementedRPCServer) Create(context.Context, *Entity) (*CommandResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
 }
-func (UnimplementedRPCServer) Patch(context.Context, *KeyEntity) (*CommandResponse, error) {
+func (UnimplementedRPCServer) Patch(context.Context, *KeyEntityRequest) (*CommandResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Patch not implemented")
 }
-func (UnimplementedRPCServer) Put(context.Context, *KeyEntity) (*CommandResponse, error) {
+func (UnimplementedRPCServer) Put(context.Context, *KeyEntityRequest) (*CommandResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Put not implemented")
 }
 func (UnimplementedRPCServer) Delete(context.Context, *KeyRequest) (*CommandResponse, error) {
@@ -230,7 +230,7 @@ func _RPC_Create_Handler(srv interface{}, ctx context.Context, dec func(interfac
 }
 
 func _RPC_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(KeyEntity)
+	in := new(KeyEntityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -242,13 +242,13 @@ func _RPC_Patch_Handler(srv interface{}, ctx context.Context, dec func(interface
 		FullMethod: "/entityproto.RPC/Patch",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RPCServer).Patch(ctx, req.(*KeyEntity))
+		return srv.(RPCServer).Patch(ctx, req.(*KeyEntityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
 func _RPC_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(KeyEntity)
+	in := new(KeyEntityRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func _RPC_Put_Handler(srv interface{}, ctx context.Context, dec func(interface{}
 		FullMethod: "/entityproto.RPC/Put",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RPCServer).Put(ctx, req.(*KeyEntity))
+		return srv.(RPCServer).Put(ctx, req.(*KeyEntityRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

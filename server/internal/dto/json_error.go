@@ -6,18 +6,18 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-type JsonError json.RawMessage
+type JsonErrors json.RawMessage
 
-func NewValidationErrors(ve []byte) *JsonError {
-	j := new(JsonError)
+func NewValidationErrors(ve []byte) *JsonErrors {
+	j := new(JsonErrors)
 	*j, _ = sjson.SetBytes([]byte(`{}`), "code", 422)
 	*j, _ = sjson.SetRawBytes(*j, "errors", ve)
 
 	return j
 }
 
-func NewJsonError(code int, message ...string) *JsonError {
-	j := new(JsonError)
+func NewJsonError(code int, message ...string) *JsonErrors {
+	j := new(JsonErrors)
 	*j, _ = sjson.SetBytes([]byte(`{}`), "code", code)
 	if len(message) > 0 {
 		*j, _ = sjson.SetBytes(*j, "message", message[0])
@@ -26,17 +26,17 @@ func NewJsonError(code int, message ...string) *JsonError {
 	return j
 }
 
-func (j *JsonError) Message(message string) *JsonError {
+func (j *JsonErrors) Message(message string) *JsonErrors {
 	*j, _ = sjson.SetBytes(*j, "message", message)
 	return j
 }
 
-func (j *JsonError) Errors(e validation.Errors) *JsonError {
+func (j *JsonErrors) Errors(e validation.Errors) *JsonErrors {
 	eb, _ := e.MarshalJSON()
 	*j, _ = sjson.SetRawBytes(*j, "errors", eb)
 	return j
 }
 
-func (j *JsonError) Error() string {
+func (j *JsonErrors) Error() string {
 	return string(*j)
 }

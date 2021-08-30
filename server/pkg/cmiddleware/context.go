@@ -56,13 +56,22 @@ func (ctx *Context) Body() string {
 	return string(bodyBytes)
 }
 
-func (ctx *Context) BodyGJson() (gjson.Result, error) {
+func (ctx *Context) BodyJson() ([]byte, error) {
 	res := gjson.Parse(ctx.Body())
 	if res.Type != gjson.JSON {
-		return res, echo.NewHTTPError(http.StatusBadRequest, "Invalid or malformed json request")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid or malformed json request")
 	}
 
-	return res, nil
+	return []byte(res.Raw), nil
+}
+
+func (ctx *Context) BodyGJson() (*gjson.Result, error) {
+	res := gjson.Parse(ctx.Body())
+	if res.Type != gjson.JSON {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid or malformed json request")
+	}
+
+	return &res, nil
 }
 
 func (ctx *Context) BodyMap() (map[string]interface{}, error) {

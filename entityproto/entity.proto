@@ -8,38 +8,36 @@ service RPC {
   rpc Index (IndexRequest) returns (IndexResponse) {}
   rpc Get (KeyRequest) returns (Entity) {}
   rpc Create (Entity) returns (CommandResponse) {}
-  rpc Patch (KeyEntity) returns (CommandResponse) {}
-  rpc Put (KeyEntity) returns (CommandResponse) {}
+  rpc Patch (KeyEntityRequest) returns (CommandResponse) {}
+  rpc Put (KeyEntityRequest) returns (CommandResponse) {}
   rpc Delete (KeyRequest) returns (CommandResponse) {}
   rpc Import (stream Entity) returns (ImportResponse) {}
 }
 
 message Entity {
-  string key = 1;
-  bytes value = 2;
-}
-
-message KeyEntity {
-  string oldKey = 1;
-  string key = 2;
-  bytes value = 3;
+  bytes json = 1;
 }
 
 message IndexRequest {
-  int64 page = 1;
-  int64 pageSize = 2;
+  int64 currentPage = 1;
+  int64 perPage = 2;
 }
 
 message KeyRequest {
   string key = 1;
 }
 
+message KeyEntityRequest {
+  string key = 1;
+  bytes json = 2;
+}
+
 message IndexResponse {
-  int64 page = 1;
-  int64 pageSize = 2;
-  repeated Entity results = 3;
-  int64 totalResults = 4;
-  int64 totalPages = 5;
+  repeated Entity results = 1;
+  int64 currentPage = 2;
+  int64 perPage = 3;
+  int64 totalCount = 4;
+  int64 pageCount = 5;
 }
 
 message CommandResponse {
@@ -49,5 +47,5 @@ message CommandResponse {
 message ImportResponse {
   bool success = 1;
   int64 rowsAffected = 2;
-  string errors = 3;
+  bytes errors = 3;
 }

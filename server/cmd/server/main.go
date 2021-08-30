@@ -20,7 +20,7 @@ func main() {
 	// CPUProfile enables cpu profiling. Note: Default is CPU
 	//defer profile.Start(profile.MemProfileHeap, profile.ProfilePath("/home/vito/go/projects/bootstrap/cmd/profile/")).Stop()
 
-	logger := log.New("server")
+	logger := log.New("eop09")
 	logger.SetLevel(log.INFO)
 
 	mongo := cmongo.Init(os.Getenv("DSN"), logger)

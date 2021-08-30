@@ -11,7 +11,8 @@ type Context interface {
 	RequestContext() context.Context
 	Body() string
 	BodyBytes() []byte
-	BodyJson() (gjson.Result, error)
+	BodyJson() ([]byte, error)
+	BodyGJson() (*gjson.Result, error)
 	BodyMap() (map[string]interface{}, error)
 	JSONBytes(code int, json []byte) error
 	JSONString(code int, json string) error
