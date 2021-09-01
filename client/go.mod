@@ -16,6 +16,7 @@ require (
 	github.com/tidwall/gjson v1.8.1
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tidwall/sjson v1.1.7 // indirect
+	github.com/valyala/fastjson v1.6.3 // indirect
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210813160813-60bc85c4be6d
 	golang.org/x/sys v0.0.0-20210820121016-41cdb8703e55 // indirect

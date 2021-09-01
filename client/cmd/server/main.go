@@ -1,16 +1,17 @@
 package main
 
 import (
-	"github.com/divilla/eop09/client/config"
+	"flag"
 	"github.com/divilla/eop09/client/internal/app"
+	"github.com/divilla/eop09/client/internal/config"
 	"github.com/divilla/eop09/client/internal/probe"
 	"github.com/divilla/eop09/client/pkg/cecho"
 	"github.com/divilla/eop09/client/pkg/cgrpc"
 	"github.com/divilla/eop09/client/pkg/largejsonreader"
-	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 	"net/http"
 	"os"
@@ -18,13 +19,14 @@ import (
 	"time"
 )
 
-func init() {
-	_ = godotenv.Load(".env.devel")
-}
+var flagConfig = flag.String("mode", "local", "select config file")
 
 func main() {
 	// CPUProfile enables cpu profiling. Note: Default is CPU
 	//defer profile.Start(profile.MemProfileHeap, profile.ProfilePath("/home/vito/go/projects/bootstrap/cmd/profile/")).Stop()
+
+	flag.Parse()
+	config.Init(*flagConfig)
 
 	e := echo.New()
 	e.Debug = true
@@ -43,15 +45,15 @@ func main() {
 	//	Timeout:      3*time.Second,
 	//}))
 
-	reader := largejsonreader.New(config.App.JsonDataFile)
-	client := cgrpc.NewClient(config.App.GRPCServerAddress, e.Logger)
+	reader := largejsonreader.New(viper.GetString("json_data_file"))
+	client := cgrpc.NewClient(viper.GetString("ports_grpc"), e.Logger)
 	defer client.Close()
 
 	app.Controller(e, client, reader)
 	probe.Controller(e)
 
 	go func() {
-		if err := e.Start(config.App.ServerAddress); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(viper.GetString("server_address")); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

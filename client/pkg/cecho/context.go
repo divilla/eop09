@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
+	"github.com/valyala/fastjson"
 	"golang.org/x/net/context"
 	"io/ioutil"
 	"net/http"
@@ -54,17 +55,24 @@ func (ctx *ccontext) BodyBytes() []byte {
 }
 
 func (ctx *ccontext) BodyJson() ([]byte, error) {
-	res := gjson.Parse(ctx.Body())
-	if res.Type != gjson.JSON {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid or malformed json request")
+	b := ctx.BodyBytes()
+	err := fastjson.ValidateBytes(b)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid or malformed json request: "+err.Error())
 	}
 
-	return []byte(res.Raw), nil
+	return b, nil
 }
 
 func (ctx *ccontext) BodyGJson() (*gjson.Result, error) {
-	res := gjson.Parse(ctx.Body())
-	if res.Type != gjson.JSON {
+	b := ctx.BodyBytes()
+	err := fastjson.ValidateBytes(b)
+	if err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid or malformed json request: "+err.Error())
+	}
+
+	res := gjson.ParseBytes(b)
+	if res.Type != gjson.JSON || !res.IsObject() {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid or malformed json request")
 	}
 

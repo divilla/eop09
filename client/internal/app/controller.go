@@ -2,7 +2,7 @@ package app
 
 import (
 	i "github.com/divilla/eop09/client/internal/interfaces"
-	. "github.com/divilla/eop09/client/pkg/cecho"
+	ce "github.com/divilla/eop09/client/pkg/cecho"
 	"github.com/labstack/echo/v4"
 	"net/http"
 	"strconv"
@@ -13,22 +13,28 @@ type controller struct {
 	logger  i.Logger
 }
 
+//Controller builds app main controller
 func Controller(e *echo.Echo, client i.GRPCClient, reader i.JsonReader) {
 	ctrl := &controller{
 		service: newService(client, reader, e.Logger),
 		logger:  e.Logger,
 	}
 
+	// RFC REST setup
 	g := e.Group("/ports")
-	g.GET("", H(ctrl.index))
-	g.GET("/:key", H(ctrl.get))
-	g.POST("", H(ctrl.create))
-	g.PATCH("/:key", H(ctrl.patch))
-	g.PUT("/:key", H(ctrl.put))
-	g.DELETE("/:key", H(ctrl.delete))
-	e.GET("/import", H(ctrl.importer))
+	g.GET("", ce.H(ctrl.index))
+	g.GET("/:key", ce.H(ctrl.get))
+	g.POST("", ce.H(ctrl.create))
+	g.PATCH("/:key", ce.H(ctrl.patch))
+	g.PUT("/:key", ce.H(ctrl.put))
+	g.DELETE("/:key", ce.H(ctrl.delete))
+
+	// import is not part of ports group, because of conflict with possible 'import' key
+	e.GET("/import", ce.H(ctrl.importer))
 }
 
+//index is used to list Ports json.
+//It accepts query parameters 'page' - page number of result set, 'results' - number of results displayed per page
 func (c *controller) index(ctx i.Context) error {
 	response, res, err := c.service.index(ctx.RequestContext(),
 		ctx.QueryParamInt64("page", 1),
@@ -45,6 +51,8 @@ func (c *controller) index(ctx i.Context) error {
 	return ctx.JSONBytes(http.StatusOK, response)
 }
 
+//get is used to fetch single Port.
+//It accepts Port 'key' parameter in the end of url
 func (c *controller) get(ctx i.Context) error {
 	res, err := c.service.get(ctx.RequestContext(), ctx.Param("key"))
 	if err != nil {
@@ -54,6 +62,9 @@ func (c *controller) get(ctx i.Context) error {
 	return ctx.JSONBytes(http.StatusOK, res)
 }
 
+//create is used to register new Port
+//It accepts JSON object in form of {"key": {"name": "Some Name", ...}}.
+//See /data/ports.json
 func (c *controller) create(ctx i.Context) error {
 	req, err := ctx.BodyGJson()
 	if err != nil {
@@ -68,6 +79,9 @@ func (c *controller) create(ctx i.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+//patch is used to modify some properties of existing Port
+//It accepts Port 'key' parameter in the end of url and JSON object in form of {"key": {"name": "Some Name", ...}}.
+//See /data/ports.json
 func (c *controller) patch(ctx i.Context) error {
 	req, err := ctx.BodyGJson()
 	if err != nil {
@@ -82,6 +96,9 @@ func (c *controller) patch(ctx i.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+//put is used to replace existing Port with new set of values
+//It accepts Port 'key' parameter in the end of url and JSON object in form of {"key": {"name": "Some Name", ...}}.
+//See /data/ports.json
 func (c *controller) put(ctx i.Context) error {
 	req, err := ctx.BodyGJson()
 	if err != nil {
@@ -96,6 +113,8 @@ func (c *controller) put(ctx i.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+//delete is used to remove existing Port from database
+//It accepts Port 'key' parameter in the end of url
 func (c *controller) delete(ctx i.Context) error {
 	res, err := c.service.delete(ctx.RequestContext(), ctx.Param("key"))
 	if err != nil {
@@ -105,6 +124,9 @@ func (c *controller) delete(ctx i.Context) error {
 	return ctx.JSON(http.StatusOK, res)
 }
 
+//importer is used to import values from file /data/ports.json
+//It reads the file buffering key and value of each entry and sending them to gRPC upstream
+//It upserts, meaning if it's new key it will insert new value, if it's existing key it will replace existing value
 func (c *controller) importer(ctx i.Context) error {
 	res, success, err := c.service.importer(ctx.RequestContext())
 	if err != nil {

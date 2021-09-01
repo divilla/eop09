@@ -3,62 +3,82 @@ package app
 import (
 	"encoding/json"
 	"github.com/divilla/eop09/entityproto"
-	"github.com/pkg/errors"
+	"github.com/labstack/echo/v4"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"net/http"
 )
 
 const (
-	KeyPath = "key"
-	CoordinatesPath = "coordinates"
+	keyPath         = "key"
+	coordinatesPath = "coordinates"
 )
 
-func encodeEntityJson(key string, result *gjson.Result) (json.RawMessage, error) {
-	if result.Type != gjson.JSON || !result.IsObject() {
-		return nil, errors.New("invalid or malformed json file")
+//incoming json object must be parsed in order to make it ready for unmarshalling
+//object key is sent in a form of property name, so it needs to be added to value object
+//coordinates are sent in a form of number, which, if imported as float might mutate it's value
+//therefore coordinates must be converted to string and then unmarshalled to decimal to preserve their original value
+func encodeEntityJson(result *gjson.Result) (json.RawMessage, error) {
+	var key string
+	var value *gjson.Result
+	var bValue json.RawMessage
+
+	result.ForEach(func(k, v gjson.Result) bool {
+		key = k.String()
+		value = &v
+		return false
+	})
+
+	if key == "" || value == nil || !value.Exists() || !value.IsObject() {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "invalid or malformed json request")
 	}
 
-	res, err := sjson.SetBytes([]byte(result.Raw), KeyPath, key)
+	bValue = []byte(value.Raw)
+	return encodeEntityKeyValue(key, &bValue)
+}
+
+func encodeEntityKeyValue(key string, value *json.RawMessage) (json.RawMessage, error) {
+	// as key comes in form of property name, the following line will add it to value object
+	res, err := sjson.SetBytes(*value, keyPath, key)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	cordResult := result.Get(CoordinatesPath)
+	// in order to preserve original decimal value, coordinates are quoted and turned into string
+	// later they can be converted to and handled as primitive.Decimal128
+	cordResult := gjson.GetBytes(*value, coordinatesPath)
 	if cordResult.Exists() && cordResult.IsArray() {
-		res, err = sjson.SetRawBytes(res, CoordinatesPath, []byte(`[]`))
+		res, err = sjson.SetRawBytes(res, coordinatesPath, []byte(`[]`))
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		cordResult.ForEach(func(key, value gjson.Result) bool {
-			res, err = sjson.SetBytes(res, CoordinatesPath + ".-1", value.Raw)
+			res, err = sjson.SetBytes(res, coordinatesPath+".-1", value.Raw)
 			if err != nil {
-				return false
+				panic(err)
 			}
 			return true
 		})
 	}
 
-	if err != nil {
-		return nil, err
-	}
 	return res, nil
 }
 
 func decodeEntityJson(value json.RawMessage) (string, json.RawMessage, error) {
-	key := gjson.GetBytes(value, KeyPath).String()
-	res, err := sjson.DeleteBytes(value, KeyPath)
+	key := gjson.GetBytes(value, keyPath).String()
+	res, err := sjson.DeleteBytes(value, keyPath)
 	if err != nil {
 		return "", nil, err
 	}
 
-	result := gjson.GetBytes(value, CoordinatesPath)
+	result := gjson.GetBytes(value, coordinatesPath)
 	if result.Exists() && result.IsArray() {
-		res, err = sjson.SetRawBytes(res, CoordinatesPath, []byte(`[]`))
+		res, err = sjson.SetRawBytes(res, coordinatesPath, []byte(`[]`))
 		if err != nil {
 			return "", nil, err
 		}
 		result.ForEach(func(key, value gjson.Result) bool {
-			res, err = sjson.SetRawBytes(res, CoordinatesPath + ".-1", []byte(value.String()))
+			res, err = sjson.SetRawBytes(res, coordinatesPath+".-1", []byte(value.String()))
 			if err != nil {
 				return false
 			}
@@ -72,7 +92,7 @@ func decodeEntityJson(value json.RawMessage) (string, json.RawMessage, error) {
 	return key, res, nil
 }
 
-func parseImportResponse(is *entityproto.ImportResponse) (json.RawMessage, bool, error){
+func parseImportResponse(is *entityproto.ImportResponse) (json.RawMessage, bool, error) {
 	res, err := sjson.SetBytes([]byte(`{}`), "success", is.GetSuccess())
 	if err != nil {
 		return nil, false, err

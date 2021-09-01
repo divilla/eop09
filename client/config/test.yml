@@ -1,0 +1,4 @@
+version: 1.0.0
+server_address: :8080
+json_data_file: data/ports.json
+ports_grpc: 127.0.0.1:8081

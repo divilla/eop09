@@ -1,3 +1,0 @@
-ServerAddress: :8080
-JsonDataFile: data/ports.json
-GRPCServerAddress: 127.0.0.1:8081

@@ -71,36 +71,18 @@ func (s *service) get(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (s *service) create(ctx context.Context, result *gjson.Result) (*pb.CommandResponse, error) {
-	var key string
-	var value *gjson.Result
-
-	result.ForEach(func(k, v gjson.Result) bool {
-		key = k.String()
-		value = &v
-		return false
-	})
-
-	res, err := encodeEntityJson(key, value)
+	res, err := encodeEntityJson(result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode Entity json: %w", err)
+		return nil, err
 	}
 
 	return s.client.Create(ctx, &pb.Entity{Json: res})
 }
 
 func (s *service) patch(ctx context.Context, currentKey string, result *gjson.Result) (*pb.CommandResponse, error) {
-	var key string
-	var value *gjson.Result
-
-	result.ForEach(func(k, v gjson.Result) bool {
-		key = k.String()
-		value = &v
-		return false
-	})
-
-	res, err := encodeEntityJson(key, value)
+	res, err := encodeEntityJson(result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode Entity json: %w", err)
+		return nil, err
 	}
 
 	return s.client.Patch(ctx, &pb.KeyEntityRequest{
@@ -110,18 +92,9 @@ func (s *service) patch(ctx context.Context, currentKey string, result *gjson.Re
 }
 
 func (s *service) put(ctx context.Context, currentKey string, result *gjson.Result) (*pb.CommandResponse, error) {
-	var key string
-	var value *gjson.Result
-
-	result.ForEach(func(k, v gjson.Result) bool {
-		key = k.String()
-		value = &v
-		return false
-	})
-
-	res, err := encodeEntityJson(key, value)
+	res, err := encodeEntityJson(result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to encode Entity json: %w", err)
+		return nil, err
 	}
 
 	return s.client.Put(ctx, &pb.KeyEntityRequest{
@@ -164,8 +137,7 @@ func (s *service) importer(ctx context.Context) (json.RawMessage, bool, error) {
 			return nil, false, fmt.Errorf("json file read error: %w", err)
 		}
 
-		result := gjson.ParseBytes(value)
-		value, err = encodeEntityJson(key, &result)
+		value, err = encodeEntityKeyValue(key, &value)
 		if err != nil {
 			return nil, false, fmt.Errorf("import json encoding failed: %w", err)
 		}

@@ -24,3 +24,7 @@ func init() {
 		panic(err)
 	}
 }
+
+func InitConfig()  {
+	
+}
