@@ -10,11 +10,11 @@ RUN apk update && \
 WORKDIR /app
 
 COPY entityproto ../entityproto
-COPY client/go.* ./
+COPY server/go.* ./
 RUN go mod download
 RUN go mod verify
 
-COPY client .
+COPY server .
 RUN make build
 
 

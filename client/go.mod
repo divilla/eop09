@@ -5,7 +5,6 @@ go 1.16
 require (
 	github.com/divilla/eop09/entityproto v0.0.0
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
-	github.com/joho/godotenv v1.3.0
 	github.com/labstack/echo/v4 v4.5.0
 	github.com/labstack/gommon v0.3.0
 	github.com/mattn/go-isatty v0.0.13 // indirect

@@ -1,32 +1,33 @@
 package main
 
 import (
+	"flag"
 	pb "github.com/divilla/eop09/entityproto"
-	"github.com/divilla/eop09/server/config"
+	"github.com/divilla/eop09/server/internal/config"
 	"github.com/divilla/eop09/server/internal/rpc"
 	"github.com/divilla/eop09/server/pkg/cmongo"
-	"github.com/joho/godotenv"
 	"github.com/labstack/gommon/log"
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"net"
-	"os"
 )
 
-func init() {
-	_ = godotenv.Load(".env.devel")
-}
+var flagConfig = flag.String("mode", "local", "select config file")
 
 func main() {
 	// CPUProfile enables cpu profiling. Note: Default is CPU
 	//defer profile.Start(profile.MemProfileHeap, profile.ProfilePath("/home/vito/go/projects/bootstrap/cmd/profile/")).Stop()
 
+	flag.Parse()
+	config.Init(*flagConfig)
+
 	logger := log.New("eop09")
 	logger.SetLevel(log.INFO)
 
-	mongo := cmongo.Init(os.Getenv("DSN"), logger)
+	mongo := cmongo.Init(viper.GetString("ports_dsn"), logger)
 	rep := cmongo.NewRepository(mongo, "port")
 
-	lis, err := net.Listen("tcp", config.App.ServerAddress)
+	lis, err := net.Listen("tcp", viper.GetString("server_address"))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

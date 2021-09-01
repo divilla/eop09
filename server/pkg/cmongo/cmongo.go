@@ -2,7 +2,7 @@ package cmongo
 
 import (
 	"context"
-	interfaces2 "github.com/divilla/eop09/server/internal/interfaces"
+	i "github.com/divilla/eop09/server/internal/interfaces"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -17,7 +17,7 @@ type (
 	}
 )
 
-func Init(dsn string, logger interfaces2.Logger) *CMongo {
+func Init(dsn string, logger i.Logger) *CMongo {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

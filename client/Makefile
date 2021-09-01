@@ -4,7 +4,7 @@ PACKAGES := $(shell go list ./... | grep -v /vendor/)
 LDFLAGS := -ldflags "-X main.Version=${VERSION}"
 
 CONFIG_FILE ?= ./config/local.yml
-APP_DSN ?= $(shell sed -n 's/^ports_grpc: *\(.*\)/\1/p' $(CONFIG_FILE))
+APP_RPC ?= $(shell sed -n 's/^ports_grpc: *\(.*\)/\1/p' $(CONFIG_FILE))
 
 PID_FILE := './.pid'
 FSWATCH_FILE := './fswatch.cfg'
