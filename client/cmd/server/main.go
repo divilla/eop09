@@ -53,7 +53,7 @@ func main() {
 	probe.Controller(e)
 
 	go func() {
-		if err := e.Start(viper.GetString("server_address")); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(":" + viper.GetString("server_port")); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("shutting down the server")
 		}
 	}()

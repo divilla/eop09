@@ -27,7 +27,7 @@ func main() {
 	mongo := cmongo.Init(viper.GetString("ports_dsn"), logger)
 	rep := cmongo.NewRepository(mongo, "port")
 
-	lis, err := net.Listen("tcp", viper.GetString("server_address"))
+	lis, err := net.Listen("tcp", ":" + viper.GetString("server_port"))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

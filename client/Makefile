@@ -60,6 +60,29 @@ clean: ## remove temporary files
 version: ## display the version of the API server
 	@echo $(VERSION)
 
+.PHONY: rpc-start
+rpc-start: ## start the database server
+	docker run -d --rm --name eop09-db \
+		-v eop09-db:/data/db \
+		-v eop09-config:/data/config \
+		-e MONGO_INITDB_ROOT_USERNAME=admin \
+		-e MONGO_INITDB_ROOT_PASSWORD=Masa1818 \
+		-p 27017:27017 \
+		mongo:4.4.8
+
+	docker run -d --rm \
+		--name eop09-server \
+		--link eop09-db \
+		-v eop09-server-tmp:/var/log/app \
+		-p 8081:8081 \
+		-e APP_DSN=mongodb://admin:Masa1818@eop09-db:27017/?authSource=admin \
+		eop09-server
+
+.PHONY: db-stop
+rpc-stop: ## stop the database server
+	docker stop eop09-server || true && docker rm eop09-server || true
+	docker stop eop09-db || true && docker rm eop09-db || true
+
 .PHONY: lint
 lint: ## run golint on all Go package
 	@golint $(PACKAGES)

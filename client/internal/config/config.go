@@ -13,5 +13,6 @@ func Init(mode string) {
 		panic(fmt.Errorf("Fatal error config file: %w \n", err))
 	}
 
+	_ = viper.BindEnv("server_port", "APP_PORT")
 	_ = viper.BindEnv("ports_grpc", "APP_RPC")
 }

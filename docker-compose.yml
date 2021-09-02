@@ -10,8 +10,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      - APP_ENV=local
-      - APP_RPC=server:8081
+      - APP_ENV=prod
+      - APP_PORT=8080
+      - APP_RPC=server:8080
     depends_on:
       - server
   server:
@@ -22,7 +23,8 @@ services:
     volumes:
       - eop09-server-tmp:/var/log/app
     environment:
-      - APP_ENV=local
+      - APP_ENV=prod
+      - APP_PORT=8080
       - APP_DSN=mongodb://admin:Masa1818@db:27017/?authSource=admin
     depends_on:
       - db
