@@ -1,6 +1,7 @@
 package cgrpc
 
 import (
+	"fmt"
 	i "github.com/divilla/eop09/client/internal/interfaces"
 	pb "github.com/divilla/eop09/entityproto"
 	"google.golang.org/grpc"
@@ -35,6 +36,14 @@ func (c *Client) IsConnected() bool {
 	return state == connectivity.Ready || state == connectivity.Idle
 }
 
+func (c *Client) State() string {
+	if c.conn == nil {
+		return fmt.Sprintf("server address: %s", c.serverAddress)
+	}
+
+	return fmt.Sprintf("state: %s, server address: %s", c.conn.GetState().String(), c.serverAddress)
+}
+
 func (c *Client) Close() {
 	if c.conn == nil || c.conn.GetState() == connectivity.Shutdown {
 		return
@@ -53,7 +62,7 @@ func (c *Client) dial() {
 	}
 	conn, err := grpc.Dial(c.serverAddress, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithConnectParams(cp))
 	if err != nil {
-		c.logger.Panicf("gRPC client failed to connect: %w", err)
+		c.logger.Panicf("gRPC client failed to connect to '%s' with error: %w", c.serverAddress, err)
 	} else {
 		c.conn = conn
 		c.RPCClient = pb.NewRPCClient(conn)

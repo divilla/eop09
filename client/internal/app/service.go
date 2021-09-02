@@ -116,7 +116,7 @@ func (s *service) importer(ctx context.Context) (json.RawMessage, bool, error) {
 	var err error
 
 	if !s.client.IsConnected() {
-		return nil, false, echo.NewHTTPError(http.StatusGone, "gRPC client not connected, please try again later")
+		return nil, false, echo.NewHTTPError(http.StatusGone, "gRPC client not connected, please try again later " + s.client.State())
 	}
 
 	impCli, err := s.client.Import(ctx)

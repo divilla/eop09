@@ -9,8 +9,8 @@ echo "[`date`] Running entrypoint script in the '${APP_ENV}' environment..."
 CONFIG_FILE=./config/${APP_ENV}.yml
 
 if [[ -z ${APP_RPC} ]]; then
-  export APP_RPC=`sed -n 's/^rpc:[[:space:]]*"\(.*\)"/\1/p' ${CONFIG_FILE}`
+  export APP_RPC=`sed -n 's/^ports_grpc: *\(.*\)/\1/p' ${CONFIG_FILE}`
 fi
 
 echo "[`date`] Starting server..."
-./server -config ${CONFIG_FILE} >> /var/log/app/server.log 2>&1
+./server -mode ${APP_ENV} >> /var/log/app/server.log 2>&1

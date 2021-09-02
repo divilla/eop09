@@ -25,4 +25,5 @@ WORKDIR /app/
 COPY --from=build /app/cmd/build/server .
 COPY --from=build /app/cmd/docker/entrypoint.sh .
 COPY --from=build /app/config/*.yml ./config/
+COPY --from=build /app/data/* ./data/
 ENTRYPOINT ["./entrypoint.sh"]
