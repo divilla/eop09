@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/divilla/eop09/client/internal/app"
 	"github.com/divilla/eop09/client/internal/config"
-	"github.com/divilla/eop09/client/internal/probe"
+	"github.com/divilla/eop09/client/internal/healthcheck"
 	"github.com/divilla/eop09/client/pkg/cecho"
 	"github.com/divilla/eop09/client/pkg/cgrpc"
 	"github.com/divilla/eop09/client/pkg/largejsonreader"
@@ -50,7 +50,7 @@ func main() {
 	defer client.Close()
 
 	app.Controller(e, client, reader)
-	probe.Controller(e)
+	healthcheck.Controller(e, client)
 
 	go func() {
 		if err := e.Start(":" + viper.GetString("server_port")); err != nil && err != http.ErrServerClosed {

@@ -1,14 +1,34 @@
 package cgrpc
 
 import (
-	"fmt"
 	i "github.com/divilla/eop09/client/internal/interfaces"
 	pb "github.com/divilla/eop09/entityproto"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/connectivity"
+	_ "google.golang.org/grpc/health"
+	"google.golang.org/grpc/keepalive"
 	"time"
 )
+
+var kacp = keepalive.ClientParameters{
+	Time:                10 * time.Second, // send pings every 10 seconds if there is no activity
+	Timeout:             time.Second,      // wait 1 second for ping ack before considering the connection dead
+	PermitWithoutStream: true,             // send pings even without active streams
+}
+
+var cp = grpc.ConnectParams{
+	Backoff:           backoff.DefaultConfig,
+	MinConnectTimeout: 3 * time.Second,
+}
+
+var sc = `{
+	"loadBalancingPolicy": "round_robin",
+	"healthCheckConfig": {
+		"serviceName": ""
+	}
+}`
 
 type Client struct {
 	pb.RPCClient
@@ -27,21 +47,17 @@ func NewClient(serverAddress string, logger i.Logger) *Client {
 	return c
 }
 
-func (c *Client) IsConnected() bool {
+func (c *Client) Ping() error {
 	if c.conn == nil {
-		return false
+		return errors.Errorf("not connected to gRPC server: %s", c.serverAddress)
 	}
 
 	state := c.conn.GetState()
-	return state == connectivity.Ready || state == connectivity.Idle
-}
-
-func (c *Client) State() string {
-	if c.conn == nil {
-		return fmt.Sprintf("server address: %s", c.serverAddress)
+	if state != connectivity.Ready && state != connectivity.Idle {
+		return errors.Errorf("lost connection to gRPC server: %s", c.serverAddress)
 	}
 
-	return fmt.Sprintf("state: %s, server address: %s", c.conn.GetState().String(), c.serverAddress)
+	return nil
 }
 
 func (c *Client) Close() {
@@ -56,11 +72,12 @@ func (c *Client) Close() {
 }
 
 func (c *Client) dial() {
-	cp := grpc.ConnectParams{
-		Backoff:           backoff.DefaultConfig,
-		MinConnectTimeout: 3 * time.Second,
-	}
-	conn, err := grpc.Dial(c.serverAddress, grpc.WithInsecure(), grpc.WithBlock(), grpc.WithConnectParams(cp))
+	conn, err := grpc.Dial(c.serverAddress,
+		grpc.WithInsecure(),
+		grpc.WithKeepaliveParams(kacp),
+		grpc.WithBlock(),
+		grpc.WithConnectParams(cp),
+		grpc.WithDefaultServiceConfig(sc))
 	if err != nil {
 		c.logger.Panicf("gRPC client failed to connect to '%s' with error: %w", c.serverAddress, err)
 	} else {

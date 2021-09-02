@@ -2,6 +2,7 @@ package cmongo
 
 import (
 	"context"
+	"fmt"
 	i "github.com/divilla/eop09/server/internal/interfaces"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -29,12 +30,6 @@ func Init(dsn string, logger i.Logger) *CMongo {
 		panic(err)
 	}
 
-	//defer func() {
-	//	if err = client.Disconnect(ctx); err != nil {
-	//		panic(err)
-	//	}
-	//}()
-
 	err = client.Ping(context.Background(), readpref.Primary())
 	if err != nil {
 		logger.Fatalf("unable to start mongo: %s", err)
@@ -52,6 +47,15 @@ func Init(dsn string, logger i.Logger) *CMongo {
 
 func (c *CMongo) Client() *mongo.Client {
 	return c.client
+}
+
+func (c *CMongo) Ping(ctx context.Context) error {
+	err := c.client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		return fmt.Errorf("mongodb server not reachable: %w", err)
+	}
+
+	return err
 }
 
 func (c *CMongo) Db() *mongo.Database {

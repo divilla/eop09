@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	pb "github.com/divilla/eop09/entityproto"
 	"github.com/divilla/eop09/server/internal/config"
@@ -9,8 +10,25 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
 	"net"
+	"time"
 )
+
+var kaep = keepalive.EnforcementPolicy{
+	MinTime:             5 * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
+	PermitWithoutStream: true,            // Allow pings even when there are no active streams
+}
+
+var kasp = keepalive.ServerParameters{
+	MaxConnectionIdle:     15 * time.Second, // If a client is idle for 15 seconds, send a GOAWAY
+	MaxConnectionAge:      30 * time.Second, // If any connection is alive for more than 30 seconds, send a GOAWAY
+	MaxConnectionAgeGrace: 5 * time.Second,  // Allow 5 seconds for pending RPCs to complete before forcibly closing connections
+	Time:                  5 * time.Second,  // Ping the client if it is idle for 5 seconds to ensure the connection is still active
+	Timeout:               1 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead
+}
 
 var flagConfig = flag.String("mode", "local", "select config file")
 
@@ -32,10 +50,31 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp))
+	healthcheck := health.NewServer()
+	healthpb.RegisterHealthServer(s, healthcheck)
 	pb.RegisterRPCServer(s, rpc.NewServer(rep, logger))
+
+	go healthCheck(healthcheck, mongo)
+
 	logger.Printf("server listening at %v", lis.Addr())
-	if err := s.Serve(lis); err != nil {
+	if err = s.Serve(lis); err != nil {
 		logger.Fatalf("failed to serve: %v", err)
+	}
+}
+
+func healthCheck(healthcheck *health.Server, client *cmongo.CMongo) {
+	ctx := context.TODO()
+	healthcheck.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+
+	for {
+		time.Sleep(6*time.Second)
+
+		err := client.Ping(ctx)
+		if err != nil {
+			healthcheck.SetServingStatus("", healthpb.HealthCheckResponse_NOT_SERVING)
+		} else {
+			healthcheck.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+		}
 	}
 }

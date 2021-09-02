@@ -19,7 +19,7 @@ RUN make build
 
 
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates bash
+RUN apk --no-cache add ca-certificates bash curl
 RUN mkdir -p /var/log/app
 WORKDIR /app/
 COPY --from=build /app/cmd/build/server .

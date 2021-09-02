@@ -13,6 +13,11 @@ services:
       - APP_ENV=prod
       - APP_PORT=8080
       - APP_RPC=server:8080
+    healthcheck:
+      test: curl -f http://localhost:8080/healthcheck || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
     depends_on:
       - server
   server:
@@ -39,6 +44,11 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: Masa1818
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 3
 volumes:
   eop09-mongo-db:
   eop90-mongo-config:

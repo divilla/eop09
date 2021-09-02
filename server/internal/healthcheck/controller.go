@@ -1,4 +1,4 @@
-package probe
+package healthcheck
 
 import (
 	"github.com/labstack/echo/v4"
@@ -15,10 +15,9 @@ func Controller(e *echo.Echo) {
 		//ser: &service{},
 	}
 
-	g := e.Group("/probe")
-	g.GET("/liveness", ctrl.liveness)
+	e.GET("/healthcheck", ctrl.healthcheck)
 }
 
-func (c *controller) liveness(ctx echo.Context) error {
+func (c *controller) healthcheck(ctx echo.Context) error {
 	return ctx.NoContent(http.StatusOK)
 }
