@@ -7,8 +7,14 @@ import (
 	"github.com/divilla/eop09/server/internal/config"
 	"github.com/divilla/eop09/server/internal/rpc"
 	"github.com/divilla/eop09/server/pkg/cmongo"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
 	"github.com/labstack/gommon/log"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -39,6 +45,14 @@ func main() {
 	flag.Parse()
 	config.Init(*flagConfig)
 
+	zapLogger, _ := zap.NewProduction()
+	defer func(zapLogger *zap.Logger) {
+		err := zapLogger.Sync()
+		if err != nil {
+			panic(err)
+		}
+	}(zapLogger)
+
 	logger := log.New("eop09")
 	logger.SetLevel(log.INFO)
 
@@ -50,7 +64,22 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	s := grpc.NewServer(grpc.KeepaliveEnforcementPolicy(kaep), grpc.KeepaliveParams(kasp))
+	s := grpc.NewServer(
+		grpc.KeepaliveEnforcementPolicy(kaep),
+		grpc.KeepaliveParams(kasp),
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_recovery.StreamServerInterceptor(),
+			grpc_ctxtags.StreamServerInterceptor(),
+			grpc_opentracing.StreamServerInterceptor(),
+			grpc_zap.StreamServerInterceptor(zapLogger),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_recovery.UnaryServerInterceptor(),
+			grpc_ctxtags.UnaryServerInterceptor(),
+			grpc_opentracing.UnaryServerInterceptor(),
+			grpc_zap.UnaryServerInterceptor(zapLogger),
+		)),
+	)
 	healthcheck := health.NewServer()
 	healthpb.RegisterHealthServer(s, healthcheck)
 	pb.RegisterRPCServer(s, rpc.NewServer(rep, logger))
